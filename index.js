@@ -11,7 +11,7 @@ const client = new Client({
 function roll() {
   const rand = Math.random() * 100;
 
-  if (rand < 50) return "Common (1/2)";
+  if (rand < 50) return "Stop using the bot please (1/2)";
   if (rand < 75) return "Uncommon (1/4)";
   if (rand < 90) return "Rare (1/10)";
   if (rand < 97) return "Epic (1/33)";
