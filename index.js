@@ -166,7 +166,6 @@ client.on("messageCreate", async (msg) => {
     }
 
     let leveled = false;
-
     while (u.xp >= xpNeeded(u.level)) {
       u.xp -= xpNeeded(u.level);
       u.level++;
@@ -177,22 +176,24 @@ client.on("messageCreate", async (msg) => {
 
     saveData();
 
-    return msg.reply({
-      embeds: [
-        new EmbedBuilder()
-          .setColor(COLOR)
-          .setTitle("🎲 Roll Result")
-          .addFields(
-            { name: "✨ Rarity", value: `🎲 **${r.name}** ︱ ${r.display}` },
-            { name: "📊 Progress", value: `⭐ Level: **${u.level}** ︱ 📈 ${u.xp}/${xpNeeded(u.level)} ︱ ➕ +${xpGain} XP` },
-            { name: "⚡ Rolling Stats", value: `🔁 Rolls: **${u.rolls}** ︱ 🍀 Luck: **x${luck.toFixed(2)}**` }
-          )
-      ]
-    });
+    const embed = new EmbedBuilder()
+      .setColor(COLOR)
+      .setTitle("🎲 Roll Result")
+      .addFields(
+        { name: "✨ Rarity", value: `🎲 **${r.name}** ︱ ${r.display}` },
+        { name: "📊 Progress", value: `⭐ Level: **${u.level}** ︱ 📈 ${u.xp}/${xpNeeded(u.level)} ︱ ➕ +${xpGain} XP` },
+        { name: "⚡ Stats", value: `🔁 Rolls: **${u.rolls}** ︱ 🍀 Luck: **x${luck.toFixed(2)}**` }
+      );
+
+    if (dice) embed.addFields({ name: "🎁 Dice Drop", value: dice });
+
+    if (leveled) embed.addFields({ name: "⬆️ Level Up!", value: "Leveled up!" });
+
+    return msg.reply({ embeds: [embed] });
   }
 
-  // ================= PROFILE / CHECK =================
-  if (msg.content.startsWith("?check") || msg.content.startsWith("?profile")) {
+  // ================= PROFILE =================
+  if (msg.content.startsWith("?profile") || msg.content.startsWith("?check")) {
     const user = msg.mentions.users.first() || msg.author;
     const p = getUser(user.id);
 
@@ -204,7 +205,7 @@ client.on("messageCreate", async (msg) => {
           .addFields(
             { name: "⭐ Level", value: `${p.level}`, inline: true },
             { name: "🔁 Rolls", value: `${p.rolls}`, inline: true },
-            { name: "🔁 Rebirths", value: `${p.rebirths}`, inline: true },
+            { name: "🔄 Rebirths", value: `${p.rebirths}`, inline: true },
             { name: "💎 Rarest", value: `${p.rarest || "None"}` }
           )
       ]
@@ -222,9 +223,9 @@ client.on("messageCreate", async (msg) => {
           .setTitle("🎒 Inventory")
           .setDescription(
             `🎲 Lucky Dice: ${inv["Lucky Dice"]}\n` +
-            `🥇 Golden Lucky Dice: ${inv["Golden Lucky Dice"]}\n` +
-            `💎 Diamond Lucky Dice: ${inv["Diamond Lucky Dice"]}\n` +
-            `🌌 Cosmic Lucky Dice: ${inv["Cosmic Lucky Dice"]}`
+            `🥇 Golden Dice: ${inv["Golden Lucky Dice"]}\n` +
+            `💎 Diamond Dice: ${inv["Diamond Lucky Dice"]}\n` +
+            `🌌 Cosmic Dice: ${inv["Cosmic Lucky Dice"]}`
           )
       ]
     });
@@ -232,7 +233,7 @@ client.on("messageCreate", async (msg) => {
 
   // ================= USE =================
   if (msg.content.startsWith("?use")) {
-    const input = msg.content.slice(4).trim();
+    const input = msg.content.slice(4).trim().toLowerCase();
 
     const boosts = {
       "lucky dice": 5,
@@ -241,16 +242,15 @@ client.on("messageCreate", async (msg) => {
       "cosmic lucky dice": 1000
     };
 
-    const key = Object.keys(boosts).find(k => k === input.toLowerCase());
+    const key = Object.keys(boosts).find(k => k === input);
 
     if (!key) return msg.reply("❌ Invalid item");
-    if (u.inventory[key] <= 0) return msg.reply("❌ You don't have this item");
+    if (u.inventory[key] <= 0) return msg.reply("❌ You don't have it");
 
     u.inventory[key]--;
     activeBoost[msg.author.id] = boosts[key];
 
     saveData();
-
     return msg.reply(`⚡ Used ${key}`);
   }
 
@@ -315,23 +315,20 @@ client.on("messageCreate", async (msg) => {
     return msg.reply("Updated");
   }
 
-  // ================= GIVE / REMOVE DICE FIXED =================
   if (msg.content.startsWith("?give dice") && isAdmin) {
     const args = msg.content.split(" ");
     const user = msg.mentions.users.first();
     const amount = parseInt(args[args.length - 1]);
     const type = args.slice(3, args.length - 1).join(" ").toLowerCase();
 
-    if (!user || isNaN(amount)) return msg.reply("Usage error");
-
     const inv = getUser(user.id).inventory;
-
     const key = Object.keys(inv).find(k => k.toLowerCase() === type);
+
     if (!key) return msg.reply("Invalid dice");
 
     inv[key] += amount;
     saveData();
-    return msg.reply("Gave dice");
+    return msg.reply("Given");
   }
 
   if (msg.content.startsWith("?remove dice") && isAdmin) {
@@ -340,69 +337,63 @@ client.on("messageCreate", async (msg) => {
     const amount = parseInt(args[args.length - 1]);
     const type = args.slice(3, args.length - 1).join(" ").toLowerCase();
 
-    if (!user || isNaN(amount)) return msg.reply("Usage error");
-
     const inv = getUser(user.id).inventory;
-
     const key = Object.keys(inv).find(k => k.toLowerCase() === type);
+
     if (!key) return msg.reply("Invalid dice");
 
     inv[key] = Math.max(0, inv[key] - amount);
     saveData();
-    return msg.reply("Removed dice");
+    return msg.reply("Removed");
   }
 
-// ================= LEADERBOARD =================
-if (msg.content === "?leaderboard") {
-  const entries = Object.entries(userData);
+  // ================= LEADERBOARD =================
+  if (msg.content === "?leaderboard") {
+    const entries = Object.entries(userData);
 
-  const getName = (id) => {
-    const member = msg.guild.members.cache.get(id);
-    return member?.displayName || member?.user?.username || "Unknown";
-  };
+    const getName = (id) => {
+      const m = msg.guild.members.cache.get(id);
+      return m?.displayName || m?.user?.username || "Unknown";
+    };
 
-  const topRolls = entries
-    .sort((a, b) => b[1].rolls - a[1].rolls)
-    .slice(0, 5)
-    .map((x, i) => `${i + 1}. ${getName(x[0])} - ${x[1].rolls}`)
-    .join("\n");
+    const topRolls = entries
+      .sort((a,b)=>b[1].rolls-a[1].rolls)
+      .slice(0,5)
+      .map((x,i)=>`${i+1}. ${getName(x[0])} - ${x[1].rolls}`)
+      .join("\n");
 
-  const topLevels = entries
-    .sort((a, b) => b[1].level - a[1].level)
-    .slice(0, 5)
-    .map((x, i) => `${i + 1}. ${getName(x[0])} - ${x[1].level}`)
-    .join("\n");
+    const topLevels = entries
+      .sort((a,b)=>b[1].level-a[1].level)
+      .slice(0,5)
+      .map((x,i)=>`${i+1}. ${getName(x[0])} - ${x[1].level}`)
+      .join("\n");
 
-  const topRebirths = entries
-    .sort((a, b) => b[1].rebirths - a[1].rebirths)
-    .slice(0, 5)
-    .map((x, i) => `${i + 1}. ${getName(x[0])} - ${x[1].rebirths}`)
-    .join("\n");
+    const topRebirths = entries
+      .sort((a,b)=>b[1].rebirths-a[1].rebirths)
+      .slice(0,5)
+      .map((x,i)=>`${i+1}. ${getName(x[0])} - ${x[1].rebirths}`)
+      .join("\n");
 
-  const topRare = entries
-    .map(x => ({
-      id: x[0],
-      rare: x[1].rarest || "None",
-      count: x[1].owned?.[x[1].rarest] || 0
-    }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5)
-    .map((x, i) => `${i + 1}. ${getName(x.id)} - ${x.rare} (${x.count})`)
-    .join("\n");
+    const topRare = entries
+      .sort((a,b)=> (b[1].owned?.[b[1].rarest]||0) - (a[1].owned?.[a[1].rarest]||0))
+      .slice(0,5)
+      .map((x,i)=>`${i+1}. ${getName(x[0])} - ${x[1].rarest || "None"}`)
+      .join("\n");
 
-  return msg.reply({
-    embeds: [
-      new EmbedBuilder()
-        .setColor(COLOR)
-        .setTitle("📊 Leaderboards")
-        .addFields(
-          { name: "🔁 Rolls", value: topRolls || "None" },
-          { name: "⭐ Levels", value: topLevels || "None" },
-          { name: "🔄 Rebirths", value: topRebirths || "None" },
-          { name: "💎 Rarest", value: topRare || "None" }
-        )
-    ]
-  });
-}
+    return msg.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(COLOR)
+          .setTitle("📊 Leaderboards")
+          .addFields(
+            { name: "🔁 Rolls", value: topRolls || "None" },
+            { name: "⭐ Levels", value: topLevels || "None" },
+            { name: "🔄 Rebirths", value: topRebirths || "None" },
+            { name: "💎 Rarest", value: topRare || "None" }
+          )
+      ]
+    });
+  }
+});
 
 client.login(process.env.TOKEN);
