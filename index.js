@@ -199,28 +199,174 @@ function effect(n) {
 
 // ================= AUTOROLL =================
 function startAutoroll(id) {
+
   const u = getUser(id);
 
+  // requires rebirth 1
   if (u.rebirths < 1) return;
+
+  // prevent duplicate intervals
   if (autorollIntervals[id]) return;
 
+  // speed scaling
+  let speed = 10000;
+
+  if (u.rebirths >= 3) {
+
+    const reduction =
+      Math.min(u.rebirths - 2, 5);
+
+    speed -= reduction * 1000;
+  }
+
   autorollIntervals[id] = setInterval(() => {
+
     const u = getUser(id);
 
-    const luck = getLuck(u.level, u.rebirths);
+    const boost = activeBoost[id] || 1;
+
+    const luck =
+      getLuck(u.level, u.rebirths) * boost;
+
     const r = roll(luck);
 
+    // roll count
     u.rolls++;
-    u.xp += points[r.name] || 1;
-    u.owned[r.name] = (u.owned[r.name] || 0) + 1;
 
-    if (!autorollLogs[id]) autorollLogs[id] = [];
+    // xp gain
+    const gain = points[r.name] || 1;
 
-    autorollLogs[id].push(r);
+    // rebirth xp multiplier
+    const xpMulti =
+      u.rebirths >= 2
+        ? 1 + (u.rebirths * 0.5)
+        : 1;
+
+    const totalXP = Math.floor(gain * xpMulti);
+
+    u.xp += totalXP;
+
+    // owned
+    u.owned[r.name] =
+      (u.owned[r.name] || 0) + 1;
+
+    // rarest tracking
+    if (
+      !u.rarest ||
+      (points[r.name] || 0) >
+      (points[u.rarest] || 0)
+    ) {
+      u.rarest = r.name;
+    }
+
+    // level system
+    let levelUps = 0;
+
+    while (u.xp >= xpNeeded(u.level)) {
+
+      u.xp -= xpNeeded(u.level);
+
+      u.level++;
+
+      levelUps++;
+    }
+
+    // dice drops
+    giveDice(u, luck);
+
+    // autoroll logs
+    if (!autorollLogs[id]) {
+      autorollLogs[id] = [];
+    }
+
+    autorollLogs[id].push({
+      ...r,
+      gain: totalXP,
+      levels: levelUps
+    });
 
     saveData();
-  }, 10000);
+
+  }, speed);
 }
+// ================= AUTOROLL SUMMARY =================
+const now = Date.now();
+
+if (!lastSeen[id]) {
+  lastSeen[id] = now;
+}
+
+// show summary after 1 minute inactivity
+if (
+  autorollLogs[id]?.length &&
+  now - lastSeen[id] >= 60000
+) {
+
+  const logs = autorollLogs[id];
+
+  autorollLogs[id] = [];
+
+  let totalRolls = logs.length;
+
+  let pointsGained = 0;
+
+  let totalLevels = 0;
+
+  let highest = null;
+
+  for (const r of logs) {
+
+    pointsGained += r.gain || 0;
+
+    totalLevels += r.levels || 0;
+
+    if (
+      !highest ||
+      (points[r.name] || 0) >
+      (points[highest.name] || 0)
+    ) {
+      highest = r;
+    }
+  }
+
+  const embed = new EmbedBuilder()
+    .setColor(0xFFDE10)
+    .setTitle("⏳ Roll Summary")
+    .addFields(
+      {
+        name: "🎲 Times Rolled",
+        value: `${totalRolls}`,
+        inline: true
+      },
+      {
+        name: "💎 Rarest Roll",
+        value: highest
+          ? `${highest.name} (${highest.display})`
+          : "None",
+        inline: true
+      },
+      {
+        name: "📈 Points Gained",
+        value: `${pointsGained.toLocaleString()}`,
+        inline: true
+      },
+      {
+        name: "⭐ Leveled Up",
+        value: `${totalLevels} times`,
+        inline: true
+      }
+    )
+    .setFooter({
+      text: "Autoroll System"
+    })
+    .setTimestamp();
+
+  await msg.channel.send({
+    embeds: [embed]
+  });
+}
+
+lastSeen[id] = now;
 
 // ================= BOT =================
 client.on("messageCreate", async (msg) => {
