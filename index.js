@@ -12,8 +12,6 @@ const client = new Client({
 
 const DATA_FILE = "./data.json";
 
-/* ---------------- DATA ---------------- */
-
 let userData = {};
 if (fs.existsSync(DATA_FILE)) {
   userData = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
@@ -23,8 +21,9 @@ function saveData() {
   fs.writeFileSync(DATA_FILE, JSON.stringify(userData, null, 2));
 }
 
-/* ---------------- ROLES ---------------- */
-
+/* =======================
+   ROLE MAP
+======================= */
 const roles = {
   "Part I": "1504750381539004477",
   "Part II": "1504750412132253807",
@@ -63,110 +62,180 @@ const roles = {
   "Everything III": "1504751748986962030"
 };
 
-/* ---------------- PROBABILITY TABLE ---------------- */
+/* =======================
+   POINT VALUES
+======================= */
+const points = {
+  "Part I": 1,
+  "Part II": 2,
+  "Part III": 3,
 
-const rarities = [
-  ["Everything III", 1 / 100000000],
-  ["Everything II", 1 / 10000000],
-  ["Everything I", 1 / 5000000],
+  "Reset I": 5,
+  "Reset II": 7,
+  "Reset III": 10,
 
-  ["Deep Research III", 1 / 2000000],
-  ["Deep Research II", 1 / 1000000],
-  ["Deep Research I", 1 / 750000],
+  "Gold Part I": 15,
+  "Gold Part II": 20,
+  "Gold Part III": 25,
 
-  ["Automation III", 1 / 500000],
-  ["Automation II", 1 / 250000],
-  ["Automation I", 1 / 150000],
+  "Rainbow Part I": 50,
+  "Rainbow Part II": 65,
+  "Rainbow Part III": 80,
 
-  ["Tier III", 1 / 100000],
-  ["Tier II", 1 / 75000],
-  ["Tier I", 1 / 50000],
+  "Dark Part I": 100,
+  "Dark Part II": 150,
+  "Dark Part III": 200,
 
-  ["Dark Part III", 1 / 30000],
-  ["Dark Part II", 1 / 15000],
-  ["Dark Part I", 1 / 7000],
+  "Tier I": 300,
+  "Tier II": 400,
+  "Tier III": 500,
 
-  ["Rainbow Part III", 1 / 4000],
-  ["Rainbow Part II", 1 / 2000],
-  ["Rainbow Part I", 1 / 1000],
+  "Automation I": 650,
+  "Automation II": 800,
+  "Automation III": 1000,
 
-  ["Gold Part III", 1 / 600],
-  ["Gold Part II", 1 / 300],
-  ["Gold Part I", 1 / 150],
+  "Deep Research I": 1500,
+  "Deep Research II": 2500,
+  "Deep Research III": 3500,
 
-  ["Reset III", 1 / 75],
-  ["Reset II", 1 / 40],
-  ["Reset I", 1 / 20],
+  "Everything I": 5000,
+  "Everything II": 7500,
+  "Everything III": 10000
+};
 
-  ["Part III", 1 / 10],
-  ["Part II", 1 / 6],
-
-  ["Part I", 1 / 3]
-];
-
-/* ---------------- DISPLAY CHANCES (SAFE) ---------------- */
-
-const chanceText = Object.fromEntries(
-  rarities.map(([name, weight]) => [
-    name,
-    `1 in ${Math.round(1 / weight).toLocaleString()}`
-  ])
-);
-
-/* ---------------- ROLL ---------------- */
-
+/* =======================
+   ROLL SYSTEM (FIXED ORDER)
+======================= */
 function roll() {
-  const total = rarities.reduce((sum, r) => sum + r[1], 0);
-  let r = Math.random() * total;
+  const rand = Math.random();
 
-  for (const [name, weight] of rarities) {
-    r -= weight;
-    if (r <= 0) return name;
-  }
+  if (rand < 1/100000000) return ["Everything III", "1/100,000,000"];
+  if (rand < 1/10000000) return ["Everything II", "1/10,000,000"];
+  if (rand < 1/5000000) return ["Everything I", "1/5,000,000"];
 
-  return "Part I";
+  if (rand < 1/2000000) return ["Deep Research III", "1/2,000,000"];
+  if (rand < 1/1000000) return ["Deep Research II", "1/1,000,000"];
+  if (rand < 1/750000) return ["Deep Research I", "1/750,000"];
+
+  if (rand < 1/500000) return ["Automation III", "1/500,000"];
+  if (rand < 1/250000) return ["Automation II", "1/250,000"];
+  if (rand < 1/150000) return ["Automation I", "1/150,000"];
+
+  if (rand < 1/100000) return ["Tier III", "1/100,000"];
+  if (rand < 1/75000) return ["Tier II", "1/75,000"];
+  if (rand < 1/50000) return ["Tier I", "1/50,000"];
+
+  if (rand < 1/30000) return ["Dark Part III", "1/30,000"];
+  if (rand < 1/15000) return ["Dark Part II", "1/15,000"];
+  if (rand < 1/7000) return ["Dark Part I", "1/7,000"];
+
+  if (rand < 1/4000) return ["Rainbow Part III", "1/4,000"];
+  if (rand < 1/2000) return ["Rainbow Part II", "1/2,000"];
+  if (rand < 1/1000) return ["Rainbow Part I", "1/1,000"];
+
+  if (rand < 1/600) return ["Gold Part III", "1/600"];
+  if (rand < 1/300) return ["Gold Part II", "1/300"];
+  if (rand < 1/150) return ["Gold Part I", "1/150"];
+
+  if (rand < 1/75) return ["Reset III", "1/75"];
+  if (rand < 1/40) return ["Reset II", "1/40"];
+  if (rand < 1/20) return ["Reset I", "1/20"];
+
+  if (rand < 1/10) return ["Part III", "1/10"];
+  if (rand < 1/6) return ["Part II", "1/6"];
+
+  return ["Part I", "1/3"];
 }
 
-/* ---------------- BOT ---------------- */
+/* =======================
+   USER DATA INIT
+======================= */
+function getUser(id) {
+  if (!userData[id]) {
+    userData[id] = {
+      points: 0,
+      luckLevel: 0,
+      owned: []
+    };
+  }
+  return userData[id];
+}
 
+/* =======================
+   LUCK SYSTEM
+   (simple upgrade scaling)
+======================= */
+function getLuckMultiplier(luckLevel) {
+  return 1 + (luckLevel * 0.2); // +20% per level
+}
+
+function getLuckUpgradeCost(level) {
+  return Math.floor(5 * Math.pow(1.5, level)); // starts at 5, x1.5
+}
+
+/* =======================
+   BOT
+======================= */
 client.on("ready", () => {
   console.log(`Logged in as ${client.user.tag}`);
 });
 
 client.on("messageCreate", async (message) => {
-  try {
-    if (message.author.bot) return;
-    if (message.channel.id !== process.env.CHANNEL_ID) return;
-    if (message.content !== "?roll") return;
+  if (message.author.bot) return;
+  if (message.channel.id !== process.env.CHANNEL_ID) return;
 
-    const result = roll();
-    const member = message.member;
+  const user = getUser(message.author.id);
 
-    if (!userData[member.id]) {
-      userData[member.id] = [];
+  /* ===== UPGRADE COMMAND ===== */
+  if (message.content === "?luck") {
+    const cost = getLuckUpgradeCost(user.luckLevel);
+
+    if (user.points < cost) {
+      return message.reply(`❌ You need ${cost} points to upgrade luck.`);
     }
 
-    const alreadyOwned = userData[member.id].includes(result);
-    const roleId = roles[result];
+    user.points -= cost;
+    user.luckLevel += 1;
+    saveData();
 
-    if (roleId && !member.roles.cache.has(roleId)) {
-      await member.roles.add(roleId);
-    }
-
-    let reply = `🎲 You got: **${result}** (${chanceText[result]})`;
-
-    if (!alreadyOwned) {
-      userData[member.id].push(result);
-      saveData();
-
-      reply += `\n🎉 **You've been awarded with a new role!**`;
-    }
-
-    await message.reply(reply);
-
-  } catch (err) {
-    console.error("Error:", err);
+    return message.reply(
+      `✨ Luck upgraded to level **${user.luckLevel}** (x${getLuckMultiplier(user.luckLevel).toFixed(2)} luck)`
+    );
   }
+
+  /* ===== ROLL COMMAND ===== */
+  if (message.content !== "?roll") return;
+
+  const [rarity, chance] = roll();
+
+  const roleId = roles[rarity];
+  const basePoints = points[rarity] || 0;
+
+  // apply luck
+  const luckMulti = getLuckMultiplier(user.luckLevel);
+  const earnedPoints = Math.floor(basePoints * luckMulti);
+
+  user.points += earnedPoints;
+
+  if (!user.owned.includes(rarity)) {
+    user.owned.push(rarity);
+  }
+
+  try {
+    if (roleId && !message.member.roles.cache.has(roleId)) {
+      await message.member.roles.add(roleId);
+    }
+  } catch (err) {
+    console.log("Role error:", err);
+  }
+
+  saveData();
+
+  message.reply(
+    `🎲 You got **${rarity}** (1/${chance})\n` +
+    `⭐ +${earnedPoints} points (x${luckMulti.toFixed(2)} luck)\n` +
+    `💰 Total Points: ${user.points}`
+  );
 });
 
 client.login(process.env.TOKEN);
