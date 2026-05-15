@@ -159,7 +159,7 @@ client.on("messageCreate", async (message) => {
       userData[member.id].push(result);
       saveData();
 
-      reply += `\n🎉 You've been awarded with a new role`;
+      reply += `\n🎉 **You've been awarded with a new role!**`;
     }
 
     await message.reply(reply);
