@@ -23,7 +23,7 @@ function saveData() {
   fs.writeFileSync(DATA_FILE, JSON.stringify(userData, null, 2));
 }
 
-/* ---------------- ROLE MAP ---------------- */
+/* ---------------- ROLES ---------------- */
 
 const roles = {
   "Part I": "1504750381539004477",
@@ -63,7 +63,7 @@ const roles = {
   "Everything III": "1504751748986962030"
 };
 
-/* ---------------- CLEAN ROLL SYSTEM ---------------- */
+/* ---------------- PROBABILITY TABLE ---------------- */
 
 const rarities = [
   ["Everything III", 1 / 100000000],
@@ -104,6 +104,17 @@ const rarities = [
   ["Part I", 1 / 3]
 ];
 
+/* ---------------- DISPLAY CHANCES (SAFE) ---------------- */
+
+const chanceText = Object.fromEntries(
+  rarities.map(([name, weight]) => [
+    name,
+    `1 in ${Math.round(1 / weight).toLocaleString()}`
+  ])
+);
+
+/* ---------------- ROLL ---------------- */
+
 function roll() {
   const total = rarities.reduce((sum, r) => sum + r[1], 0);
   let r = Math.random() * total;
@@ -131,22 +142,18 @@ client.on("messageCreate", async (message) => {
     const result = roll();
     const member = message.member;
 
-    console.log("ROLL RESULT:", result); // DEBUG (keep for now)
-
     if (!userData[member.id]) {
       userData[member.id] = [];
     }
 
     const alreadyOwned = userData[member.id].includes(result);
-
     const roleId = roles[result];
 
-    // assign role safely
     if (roleId && !member.roles.cache.has(roleId)) {
       await member.roles.add(roleId);
     }
 
-    let reply = `🎲 You got: **${result}**`;
+    let reply = `🎲 You got: **${result}** (${chanceText[result]})`;
 
     if (!alreadyOwned) {
       userData[member.id].push(result);
@@ -158,7 +165,7 @@ client.on("messageCreate", async (message) => {
     await message.reply(reply);
 
   } catch (err) {
-    console.error("Message handler error:", err);
+    console.error("Error:", err);
   }
 });
 
