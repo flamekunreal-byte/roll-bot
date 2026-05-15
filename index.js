@@ -295,9 +295,96 @@ if(msg.content==="?rebirth confirm"){
 }
 
 // ================= ADMIN =================
-if(msg.content==="?admin"){
-  if(!isAdmin) return;
-  return msg.reply("Commands: ?setrolls, ?setlevel, ?setrebirth, ?give dice, ?remove dice");
+if (msg.content.startsWith("?rolls") && isAdmin) {
+  const args = msg.content.split(" ");
+  const action = args[1];
+  const amount = parseInt(args[2]);
+
+  if (action === "add") u.rolls += amount;
+  if (action === "remove") u.rolls = Math.max(0, u.rolls - amount);
+
+  saveData();
+  return msg.reply("✅ Done");
+}
+
+if (msg.content.startsWith("?setrolls") && isAdmin) {
+  const user = msg.mentions.users.first();
+  const amount = parseInt(msg.content.split(" ")[2]);
+
+  getUser(user.id).rolls = amount;
+
+  saveData();
+  return msg.reply("✅ Updated");
+}
+
+if (msg.content.startsWith("?setlevel") && isAdmin) {
+  const user = msg.mentions.users.first();
+  const amount = parseInt(msg.content.split(" ")[2]);
+
+  getUser(user.id).level = amount;
+
+  saveData();
+  return msg.reply("✅ Updated");
+}
+
+if (msg.content.startsWith("?setrebirth") && isAdmin) {
+  const user = msg.mentions.users.first();
+  const amount = parseInt(msg.content.split(" ")[2]);
+
+  getUser(user.id).rebirths = amount;
+
+  saveData();
+  return msg.reply("✅ Updated");
+}
+
+if (msg.content.startsWith("?give dice") && isAdmin) {
+  const args = msg.content.split(" ");
+
+  const user = msg.mentions.users.first();
+  const amount = parseInt(args[args.length - 1]);
+
+  const type = args
+    .slice(3, args.length - 1)
+    .join(" ")
+    .toLowerCase();
+
+  const inv = getUser(user.id).inventory;
+
+  const key = Object.keys(inv)
+    .find(x => x.toLowerCase() === type);
+
+  if (!key) return msg.reply("❌ Invalid dice");
+
+  inv[key] += amount;
+
+  saveData();
+
+  return msg.reply("✅ Given");
+}
+
+if (msg.content.startsWith("?remove dice") && isAdmin) {
+  const args = msg.content.split(" ");
+
+  const user = msg.mentions.users.first();
+  const amount = parseInt(args[args.length - 1]);
+
+  const type = args
+    .slice(3, args.length - 1)
+    .join(" ")
+    .toLowerCase();
+
+  const inv = getUser(user.id).inventory;
+
+  const key = Object.keys(inv)
+    .find(x => x.toLowerCase() === type);
+
+  if (!key) return msg.reply("❌ Invalid dice");
+
+  inv[key] = Math.max(0, inv[key] - amount);
+
+  saveData();
+
+  return msg.reply("✅ Removed");
 }
 
 // ================= PROFILE =================
