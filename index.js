@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Options } = require("discord.js");
+const { Client, GatewayIntentBits } = require("discord.js");
 const fs = require("fs");
 
 const client = new Client({
@@ -16,6 +16,7 @@ const DATA_FILE = "./data.json";
 
 let userData = {};
 let pendingRebirth = {};
+let activeBoost = {}; // NEW
 
 function loadData() {
   if (fs.existsSync(DATA_FILE)) {
@@ -120,7 +121,15 @@ function getUser(id) {
       rolls: 0,
       rebirths: 0,
       owned: {},
-      rarest: null
+      rarest: null,
+
+      // NEW INVENTORY
+      inventory: {
+        "Lucky Dice": 0,
+        "Golden Lucky Dice": 0,
+        "Diamond Lucky Dice": 0,
+        "Cosmic Lucky Dice": 0
+      }
     };
   }
   return userData[id];
@@ -132,6 +141,30 @@ function xpNeeded(level) {
 
 function getLuck(level, rebirths) {
   return Math.pow(1.2, level - 1) * Math.pow(2, rebirths);
+}
+
+// -------------------- DICE SYSTEM (NOT BOOSTED) --------------------
+function giveDice(user) {
+  const r = Math.random();
+
+  if (r < 1 / 10000) {
+    user.inventory["Cosmic Lucky Dice"]++;
+    return "🌌 Cosmic Lucky Dice";
+  }
+  if (r < 1 / 2500) {
+    user.inventory["Diamond Lucky Dice"]++;
+    return "💎 Diamond Lucky Dice";
+  }
+  if (r < 1 / 500) {
+    user.inventory["Golden Lucky Dice"]++;
+    return "🥇 Golden Lucky Dice";
+  }
+  if (r < 1 / 50) {
+    user.inventory["Lucky Dice"]++;
+    return "🎲 Lucky Dice";
+  }
+
+  return null;
 }
 
 // -------------------- ROLL --------------------
@@ -186,21 +219,20 @@ function roll(luck) {
 }
 
 // -------------------- BOT --------------------
-client.on("ready", () => {
-  console.log(`Logged in as ${client.user.tag}`);
-});
-
 client.on("messageCreate", async (message) => {
-  if (message.author.bot) return;
-  if (!message.guild) return;
+  if (message.author.bot || !message.guild) return;
 
   const user = getUser(message.member.id);
 
   // ---------------- ROLL ----------------
   if (message.content === "?roll") {
-    const luck = getLuck(user.level, user.rebirths);
-    const result = roll(luck);
 
+    let boost = activeBoost[message.member.id] || 1;
+    delete activeBoost[message.member.id];
+
+    const luck = getLuck(user.level, user.rebirths) * boost;
+
+    const result = roll(luck);
     user.rolls++;
 
     const rarity = result.name;
@@ -222,26 +254,56 @@ client.on("messageCreate", async (message) => {
       leveled = true;
     }
 
-    const roleId = roles[rarity];
-    if (roleId && !message.member.roles.cache.has(roleId)) {
-      await message.member.roles.add(roleId);
-    }
+    const dice = giveDice(user);
 
     saveData();
-
-    const nextXP = xpNeeded(user.level);
 
     let reply =
 `🎲 ${rarity} [${result.display}]
 ⭐ Level: ${user.level}
-📊 XP +${xpGain} (${user.xp}/${nextXP})
 🔁 Rolls: ${user.rolls}
 🍀 Luck: x${luck.toFixed(2)}`;
 
+    if (dice) reply += `\n✨ You found: ${dice}`;
     if (leveled) reply += `\n⬆️ Level up!`;
-    if (user.owned[rarity] === 1) reply += `\n🎉 New rarity unlocked!`;
 
     return message.reply(reply);
+  }
+
+  // ---------------- INVENTORY ----------------
+  if (message.content === "?inv") {
+    const inv = user.inventory;
+
+    return message.reply(
+`🎒 INVENTORY
+
+🎲 Lucky Dice: ${inv["Lucky Dice"]}
+🥇 Golden Lucky Dice: ${inv["Golden Lucky Dice"]}
+💎 Diamond Lucky Dice: ${inv["Diamond Lucky Dice"]}
+🌌 Cosmic Lucky Dice: ${inv["Cosmic Lucky Dice"]}`
+    );
+  }
+
+  // ---------------- USE DICE ----------------
+  if (message.content.startsWith("?use")) {
+    const name = message.content.slice(5).trim();
+
+    const boosts = {
+      "Lucky Dice": 5,
+      "Golden Lucky Dice": 25,
+      "Diamond Lucky Dice": 100,
+      "Cosmic Lucky Dice": 1000
+    };
+
+    if (!boosts[name]) return message.reply("❌ Invalid item.");
+    if (user.inventory[name] <= 0) return message.reply("❌ You don't have this item.");
+
+    user.inventory[name]--;
+    activeBoost[message.member.id] = boosts[name];
+
+    saveData();
+
+    return message.reply(`⚡ Used **${name}** → Next roll x${boosts[name]} luck!`);
   }
 
   // ---------------- REBIRTH ----------------
@@ -249,11 +311,11 @@ client.on("messageCreate", async (message) => {
     const required = Math.floor(1000 * Math.pow(2.5, user.rebirths));
 
     if (user.rolls < required) {
-      return message.reply(`❌ You need ${required} rolls to rebirth.`);
+      return message.reply(`❌ You need ${required} rolls.`);
     }
 
     pendingRebirth[message.member.id] = true;
-    return message.reply(`⚠️ Type **?rebirth confirm** to rebirth (+x2 luck stacking)`);
+    return message.reply("⚠️ Type ?rebirth confirm");
   }
 
   if (message.content === "?rebirth confirm") {
@@ -265,10 +327,9 @@ client.on("messageCreate", async (message) => {
     user.rolls = 0;
 
     pendingRebirth[message.member.id] = false;
-
     saveData();
 
-    return message.reply(`🔥 Rebirth complete! Luck multiplier increased.`);
+    return message.reply("🔥 Rebirth complete!");
   }
 
   // ---------------- LEADERBOARD (FIXED) ----------------
@@ -276,49 +337,17 @@ client.on("messageCreate", async (message) => {
     const entries = Object.entries(userData);
 
     const getName = (id) => {
-      const member = message.guild.members.cache.get(id);
-      return (
-        member?.displayName ||
-        member?.user?.username ||
-        "Unknown User"
-      );
+      const m = message.guild.members.cache.get(id);
+      return m?.displayName || m?.user?.username || "Unknown";
     };
 
     const topRolls = [...entries]
       .sort((a, b) => (b[1].rolls || 0) - (a[1].rolls || 0))
       .slice(0, 5)
-      .map((x, i) => `${i + 1}. ${getName(x[0])} - ${x[1].rolls} rolls`)
+      .map((x, i) => `${i + 1}. ${getName(x[0])} - ${x[1].rolls}`)
       .join("\n");
 
-    const topLevels = [...entries]
-      .sort((a, b) => (b[1].level || 1) - (a[1].level || 1))
-      .slice(0, 5)
-      .map((x, i) => `${i + 1}. ${getName(x[0])} - Level ${x[1].level}`)
-      .join("\n");
-
-    const topRare = [...entries]
-      .map(x => {
-        const u = x[1];
-        const rare = u.rarest || "None";
-        return { id: x[0], name: getName(x[0]), rare, count: u.owned?.[rare] || 0 };
-      })
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5)
-      .map((x, i) => `${i + 1}. ${x.name} - ${x.rare} (${x.count}x)`)
-      .join("\n");
-
-    return message.reply(
-`📊 LEADERBOARD
-
-🔁 Total Rolls:
-${topRolls}
-
-⭐ Highest Level:
-${topLevels}
-
-💎 Rarest Rolls:
-${topRare}`
-    );
+    return message.reply(`📊 LEADERBOARD\n\n${topRolls}`);
   }
 });
 
