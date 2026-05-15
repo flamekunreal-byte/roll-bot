@@ -149,7 +149,8 @@ client.on("messageCreate", async (msg) => {
     const r = roll(luck);
 
     u.rolls++;
-    u.xp += points[r.name] || 1;
+    const xpGain = points[r.name] || 1;
+    u.xp += xpGain;
 
     u.owned[r.name] = (u.owned[r.name] || 0) + 1;
 
@@ -158,7 +159,6 @@ client.on("messageCreate", async (msg) => {
     }
 
     let leveled = false;
-    const xpGain = points[r.name] || 1;
 
     while (u.xp >= xpNeeded(u.level)) {
       u.xp -= xpNeeded(u.level);
@@ -174,16 +174,34 @@ client.on("messageCreate", async (msg) => {
       .setColor(COLOR)
       .setTitle("🎲 Roll Result")
       .addFields(
-        { name: "✨ Rarity", value: `🎲 ${r.name}\n(${r.display})` },
-        { name: "⭐ Level", value: `⭐ ${u.level}`, inline: true },
-        { name: "📊 XP Gained", value: `📈 +${xpGain}`, inline: true },
-        { name: "📈 XP", value: `${u.xp}/${xpNeeded(u.level)}`, inline: true },
-        { name: "🔁 Rolls", value: `🔁 ${u.rolls}`, inline: true },
-        { name: "🍀 Luck", value: `🍀 x${luck.toFixed(2)}`, inline: true }
+        {
+          name: "✨ Rarity",
+          value: `🎲 **${r.name}** ︱ ${r.display}`,
+          inline: false
+        },
+        {
+          name: "📊 Progress",
+          value: `⭐ Level: **${u.level}** ︱ 📈 ${u.xp}/${xpNeeded(u.level)} ︱ ➕ +${xpGain} XP`,
+          inline: false
+        },
+        {
+          name: "🔁 Stats",
+          value: `🔁 Rolls: **${u.rolls}** ︱ 🍀 Luck: **x${luck.toFixed(2)}**`,
+          inline: false
+        }
       );
 
-    if (dice) embed.addFields({ name: "🎁 Dice Found", value: `🎲 ${dice}` });
-    if (leveled) embed.addFields({ name: "⬆️ Level Up", value: "⬆️ Yes" });
+    if (dice)
+      embed.addFields({
+        name: "🎁 Drop",
+        value: `🎲 You found: **${dice}**`
+      });
+
+    if (leveled)
+      embed.addFields({
+        name: "⬆️ Level Up",
+        value: "🎉 You leveled up!"
+      });
 
     return msg.reply({ embeds: [embed] });
   }
@@ -198,10 +216,10 @@ client.on("messageCreate", async (msg) => {
           .setColor(COLOR)
           .setTitle("🎒 Inventory")
           .addFields(
-            { name: "🎲 Lucky Dice", value: `${i["Lucky Dice"]}`, inline: true },
-            { name: "🥇 Golden Dice", value: `${i["Golden Lucky Dice"]}`, inline: true },
-            { name: "💎 Diamond Dice", value: `${i["Diamond Lucky Dice"]}`, inline: true },
-            { name: "🌌 Cosmic Dice", value: `${i["Cosmic Lucky Dice"]}`, inline: true }
+            { name: "🎲 Lucky Dice", value: `🎲 ${i["Lucky Dice"]}`, inline: true },
+            { name: "🥇 Golden Dice", value: `🥇 ${i["Golden Lucky Dice"]}`, inline: true },
+            { name: "💎 Diamond Dice", value: `💎 ${i["Diamond Lucky Dice"]}`, inline: true },
+            { name: "🌌 Cosmic Dice", value: `🌌 ${i["Cosmic Lucky Dice"]}`, inline: true }
           )
       ]
     });
@@ -216,11 +234,11 @@ client.on("messageCreate", async (msg) => {
       embeds: [
         new EmbedBuilder()
           .setColor(COLOR)
-          .setTitle(`👤 ${t.username}`)
+          .setTitle(`👤 Profile — ${t.username}`)
           .addFields(
-            { name: "⭐ Level", value: `${p.level}`, inline: true },
-            { name: "🔁 Rolls", value: `${p.rolls}`, inline: true },
-            { name: "💎 Rarest", value: p.rarest || "None" }
+            { name: "⭐ Level", value: `⭐ ${p.level}`, inline: true },
+            { name: "🔁 Rolls", value: `🔁 ${p.rolls}`, inline: true },
+            { name: "💎 Rarest Roll", value: `💎 ${p.rarest || "None"}` }
           )
       ]
     });
@@ -284,11 +302,11 @@ client.on("messageCreate", async (msg) => {
       embeds: [
         new EmbedBuilder()
           .setColor(COLOR)
-          .setTitle("📊 Leaderboard")
+          .setTitle("📊 Leaderboards")
           .addFields(
             { name: "🔁 Rolls", value: topRolls || "None" },
             { name: "⭐ Levels", value: topLevels || "None" },
-            { name: "💎 Rarest", value: topRare || "None" }
+            { name: "💎 Rarest Rolls", value: topRare || "None" }
           )
       ]
     });
