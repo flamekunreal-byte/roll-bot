@@ -552,53 +552,96 @@ XP: ${u.xp}/${xpNeeded(u.level)}
         ]
       });
     }
+// ================= INVENTORY =================
+if (msg.content === "?inv") {
 
-    // ================= INVENTORY =================
-    if (msg.content === "?inv") {
-      const i = u.inventory;
+  const i = u.inventory;
 
-      return msg.reply(`
-🎲 Lucky: ${i["Lucky Dice"]}
-🥇 Golden: ${i["Golden Lucky Dice"]}
-💎 Diamond: ${i["Diamond Lucky Dice"]}
-🌌 Cosmic: ${i["Cosmic Lucky Dice"]}
-      `);
-    }
-
-    // ================= USE =================
-    if (msg.content.startsWith("?use")) {
-      const type = msg.content
-        .slice(4)
-        .trim()
-        .toLowerCase();
-
-      const boosts = {
-        "lucky dice": 5,
-        "golden lucky dice": 25,
-        "diamond lucky dice": 100,
-        "cosmic lucky dice": 1000
-      };
-
-      const key = Object.keys(boosts).find(
-        (k) => k === type
-      );
-
-      if (!key) {
-        return msg.reply("❌ Invalid item");
+  const embed = new EmbedBuilder()
+    .setColor(COLOR)
+    .setTitle(`🎒 ${msg.author.username}'s Inventory`)
+    .setDescription("Your collected dice items:")
+    .addFields(
+      {
+        name: "🎲 Lucky Dice",
+        value: `${i["Lucky Dice"]}`,
+        inline: true
+      },
+      {
+        name: "🥇 Golden Lucky Dice",
+        value: `${i["Golden Lucky Dice"]}`,
+        inline: true
+      },
+      {
+        name: "💎 Diamond Lucky Dice",
+        value: `${i["Diamond Lucky Dice"]}`,
+        inline: true
+      },
+      {
+        name: "🌌 Cosmic Lucky Dice",
+        value: `${i["Cosmic Lucky Dice"]}`,
+        inline: true
       }
+    )
+    .addFields({
+      name: "⚡ How to Use",
+      value: "`?use lucky | golden | diamond | cosmic`"
+    })
+    .setFooter({ text: "Inventory System" })
+    .setTimestamp();
 
-      if (u.inventory[key] <= 0) {
-        return msg.reply("❌ None left");
-      }
+  return msg.reply({ embeds: [embed] });
+}
 
-      u.inventory[key]--;
+// ================= USE =================
+if (msg.content.startsWith("?use")) {
 
-      activeBoost[id] = boosts[key];
+  const input = msg.content
+    .slice(4)
+    .trim()
+    .toLowerCase();
 
-      saveData();
-
-      return msg.reply(`⚡ Used ${key}`);
+  const items = {
+    lucky: {
+      name: "Lucky Dice",
+      boost: 5
+    },
+    golden: {
+      name: "Golden Lucky Dice",
+      boost: 25
+    },
+    diamond: {
+      name: "Diamond Lucky Dice",
+      boost: 100
+    },
+    cosmic: {
+      name: "Cosmic Lucky Dice",
+      boost: 1000
     }
+  };
+
+  const key = Object.keys(items).find(k => k === input);
+
+  if (!key) {
+    return msg.reply("❌ Invalid item. Use: lucky, golden, diamond, cosmic");
+  }
+
+  const item = items[key];
+
+  if (!u.inventory[item.name] || u.inventory[item.name] <= 0) {
+    return msg.reply("❌ You don't have this item");
+  }
+
+  u.inventory[item.name]--;
+
+  activeBoost[id] = item.boost;
+
+  saveData();
+
+  return msg.reply(
+    `⚡ Used **${item.name}** (+${item.boost}x luck)`
+  );
+}
 
   // ================= REBIRTH =================
 if (msg.content === "?rebirth") {
