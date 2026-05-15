@@ -372,7 +372,10 @@ saveData();
     }
 
   }, speed);
-  
+
+}
+
+
 // ================= BOT =================
 client.on("messageCreate", async (msg) => {
   try {
