@@ -172,11 +172,10 @@ function effect(n){
 function startAutoroll(id){
   const u = getUser(id);
 
-  // lock until rebirth 1
   if (u.rebirths < 1) return;
-
   if (autorollIntervals[id]) return;
 
+  autorollIntervals[id] = setInterval(() => {
     const u = getUser(id);
     const luck = getLuck(u.level, u.rebirths);
     const r = roll(luck);
@@ -189,7 +188,7 @@ function startAutoroll(id){
     autorollLogs[id].push(r);
 
     saveData();
-  }, getInterval(getUser(id)));
+  }, 10000);
 }
 // ================= BOT =================
 client.on("messageCreate", async (msg) => {
@@ -197,7 +196,7 @@ client.on("messageCreate", async (msg) => {
     if (!msg.guild || msg.author.bot) return;
 
     const id = msg.author.id;
-    const u = getUser(id); // ✅ DECLARED ONCE ONLY HERE
+    const u = getUser(id);
 
     const content = msg.content.trim();
 
@@ -288,7 +287,8 @@ if (autorollLogs[msg.author.id]?.length && now - last > 30000) {
   // ================= ROLL =================
 if (msg.content === "?roll") {
 
-  const u = getUser(msg.author.id);
+const id = msg.author.id;
+const u = getUser(id);
 
   // unlock condition
   if (u.rebirths < 1) {
