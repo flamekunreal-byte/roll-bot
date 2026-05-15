@@ -10,67 +10,29 @@ const client = new Client({
   ]
 });
 
+// -------------------- DATA --------------------
 const DATA_FILE = "./data.json";
 
-// ---------------- SAFE JSON LOAD ----------------
 let userData = {};
+let pendingRebirth = {};
 
-try {
+function loadData() {
   if (fs.existsSync(DATA_FILE)) {
-    userData = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+    try {
+      userData = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+    } catch {
+      userData = {};
+    }
   }
-} catch (e) {
-  console.log("Corrupt data.json detected, resetting safely");
-  userData = {};
 }
 
-// ---------------- ATOMIC SAVE (prevents corruption) ----------------
 function saveData() {
-  const tempFile = DATA_FILE + ".tmp";
-  fs.writeFileSync(tempFile, JSON.stringify(userData, null, 2));
-  fs.renameSync(tempFile, DATA_FILE);
+  fs.writeFileSync(DATA_FILE, JSON.stringify(userData, null, 2));
 }
 
-// ---------------- POINTS ----------------
-const points = {
-  "Part I": 1,
-  "Part II": 2,
-  "Part III": 3,
+loadData();
 
-  "Reset I": 5,
-  "Reset II": 7,
-  "Reset III": 10,
-
-  "Gold Part I": 15,
-  "Gold Part II": 20,
-  "Gold Part III": 25,
-
-  "Rainbow Part I": 50,
-  "Rainbow Part II": 65,
-  "Rainbow Part III": 80,
-
-  "Dark Part I": 100,
-  "Dark Part II": 150,
-  "Dark Part III": 200,
-
-  "Tier I": 300,
-  "Tier II": 400,
-  "Tier III": 500,
-
-  "Automation I": 650,
-  "Automation II": 800,
-  "Automation III": 1000,
-
-  "Deep Research I": 1500,
-  "Deep Research II": 2500,
-  "Deep Research III": 3500,
-
-  "Everything I": 5000,
-  "Everything II": 7500,
-  "Everything III": 10000
-};
-
-// ---------------- ROLES ----------------
+// -------------------- ROLES --------------------
 const roles = {
   "Part I": "1504750381539004477",
   "Part II": "1504750412132253807",
@@ -109,15 +71,55 @@ const roles = {
   "Everything III": "1504751748986962030"
 };
 
-// ---------------- USER DATA ----------------
+// -------------------- POINTS --------------------
+const points = {
+  "Part I": 1,
+  "Part II": 2,
+  "Part III": 3,
+
+  "Reset I": 5,
+  "Reset II": 7,
+  "Reset III": 10,
+
+  "Gold Part I": 15,
+  "Gold Part II": 20,
+  "Gold Part III": 25,
+
+  "Rainbow Part I": 50,
+  "Rainbow Part II": 65,
+  "Rainbow Part III": 80,
+
+  "Dark Part I": 100,
+  "Dark Part II": 150,
+  "Dark Part III": 200,
+
+  "Tier I": 300,
+  "Tier II": 400,
+  "Tier III": 500,
+
+  "Automation I": 650,
+  "Automation II": 800,
+  "Automation III": 1000,
+
+  "Deep Research I": 1500,
+  "Deep Research II": 2500,
+  "Deep Research III": 3500,
+
+  "Everything I": 5000,
+  "Everything II": 7500,
+  "Everything III": 10000
+};
+
+// -------------------- USER --------------------
 function getUser(id) {
   if (!userData[id]) {
     userData[id] = {
       xp: 0,
       level: 1,
-      owned: [],
       rolls: 0,
-      rarityCounts: {}
+      rebirths: 0,
+      owned: {},
+      rarest: null
     };
   }
   return userData[id];
@@ -127,17 +129,17 @@ function xpNeeded(level) {
   return Math.floor(5 * Math.pow(1.5, level - 1));
 }
 
-function getLuck(level) {
-  return Math.pow(1.2, level - 1);
+function getLuck(level, rebirths) {
+  return Math.pow(1.2, level - 1) * Math.pow(2, rebirths);
 }
 
-// ---------------- ROLL ----------------
+// -------------------- ROLL --------------------
 function roll(luck) {
   const r = Math.random();
 
-  const check = (chance, name, displayChance) => {
+  const check = (chance, name, display) => {
     if (r < chance * luck) {
-      return { name, chance: displayChance };
+      return { name, display };
     }
     return null;
   };
@@ -178,39 +180,45 @@ function roll(luck) {
     check(1 / 10, "Part III", "1/10") ||
     check(1 / 6, "Part II", "1/6") ||
 
-    { name: "Part I", chance: "1/3" }
+    { name: "Part I", display: "1/3" }
   );
 }
 
-// ---------------- BOT ----------------
+// -------------------- BOT --------------------
 client.on("ready", () => {
   console.log(`Logged in as ${client.user.tag}`);
 });
 
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
-  if (message.channel.id !== process.env.CHANNEL_ID) return;
+  if (!message.guild) return;
 
   const user = getUser(message.member.id);
 
   // ---------------- ROLL ----------------
   if (message.content === "?roll") {
-    const luck = getLuck(user.level);
+    const luck = getLuck(user.level, user.rebirths);
     const result = roll(luck);
+
+    user.rolls++;
 
     const rarity = result.name;
 
-    user.rolls++;
-    user.rarityCounts[rarity] = (user.rarityCounts[rarity] || 0) + 1;
+    user.xp += points[rarity] || 1;
 
-    const gainedXP = points[rarity] || 1;
-    user.xp += gainedXP;
+    if (!user.owned[rarity]) user.owned[rarity] = 0;
+    user.owned[rarity]++;
 
-    let leveledUp = false;
+    if (!user.rarest || user.owned[rarity] > user.owned[user.rarest]) {
+      user.rarest = rarity;
+    }
+
+    // level up
+    let leveled = false;
     while (user.xp >= xpNeeded(user.level)) {
       user.xp -= xpNeeded(user.level);
       user.level++;
-      leveledUp = true;
+      leveled = true;
     }
 
     const roleId = roles[rarity];
@@ -218,51 +226,91 @@ client.on("messageCreate", async (message) => {
       await message.member.roles.add(roleId);
     }
 
-    if (!user.owned.includes(rarity)) {
-      user.owned.push(rarity);
-    }
-
     saveData();
 
     let reply =
-`🎲 You got: **${rarity} [${result.chance}]**
+`🎲 ${rarity} [${result.display}]
 ⭐ Level: ${user.level}
-📊 XP +${gainedXP} (${user.xp}/${xpNeeded(user.level)})
-🍀 Luck: x${getLuck(user.level).toFixed(2)}`;
+🔁 Rolls: ${user.rolls}
+🍀 Luck: x${luck.toFixed(2)}`;
 
-    if (leveledUp) reply += `\n⬆️ Level up!`;
+    if (leveled) reply += `\n⬆️ Level up!`;
 
-    if (!user.owned.includes(rarity)) {
-      reply += `\n🎉 You've been awarded with a new role`;
+    if (user.owned[rarity] === 1) {
+      reply += `\n🎉 New rarity unlocked!`;
     }
 
     return message.reply(reply);
   }
 
-  // ---------------- LEADERBOARD ----------------
-  if (message.content === "?leaderboard") {
-    const sorted = Object.entries(userData)
-      .sort((a, b) => b[1].level - a[1].level);
+  // ---------------- REBIRTH ----------------
+  if (message.content === "?rebirth") {
+    const required = Math.floor(1000 * Math.pow(2.5, user.rebirths));
 
-    let text = `🏆 **Leaderboard**\n\n`;
-
-    for (const [id, data] of sorted.slice(0, 10)) {
-      const topRarity = Object.entries(data.rarityCounts || {})
-        .sort((a, b) => b[1] - a[1])[0];
-
-      const userTag =
-        message.guild.members.cache.get(id)?.user.username || "Unknown";
-
-      text +=
-`${userTag}
-⭐ Level: ${data.level || 1}
-🎲 Rolls: ${data.rolls || 0}
-💎 Rarest: ${topRarity ? `${topRarity[0]} (${topRarity[1]}x)` : "None"}
-
-`;
+    if (user.rolls < required) {
+      return message.reply(`❌ You need ${required} rolls to rebirth.`);
     }
 
-    return message.reply(text);
+    pendingRebirth[message.member.id] = true;
+    return message.reply(`⚠️ Type **?rebirth confirm** to reset for +1 rebirth (x2 luck)`);
+  }
+
+  if (message.content === "?rebirth confirm") {
+    if (!pendingRebirth[message.member.id]) return;
+
+    const user = getUser(message.member.id);
+
+    user.rebirths++;
+    user.level = 1;
+    user.xp = 0;
+    user.rolls = 0;
+
+    pendingRebirth[message.member.id] = false;
+
+    saveData();
+
+    return message.reply(`🔥 Rebirth successful! You now have x${Math.pow(2, user.rebirths)} luck multiplier`);
+  }
+
+  // ---------------- LEADERBOARD ----------------
+  if (message.content === "?leaderboard") {
+    const entries = Object.entries(userData);
+
+    const topRolls = [...entries]
+      .sort((a, b) => (b[1].rolls || 0) - (a[1].rolls || 0))
+      .slice(0, 5)
+      .map(([id, d], i) => `${i + 1}. <@${id}> - ${d.rolls || 0} rolls`)
+      .join("\n");
+
+    const topLevel = [...entries]
+      .sort((a, b) => (b[1].level || 1) - (a[1].level || 1))
+      .slice(0, 5)
+      .map(([id, d], i) => `${i + 1}. <@${id}> - Level ${d.level || 1}`)
+      .join("\n");
+
+    const topRare = [...entries]
+      .map(([id, d]) => {
+        const rare = d.rarest || "None";
+        const count = d.owned?.[rare] || 0;
+        return { id, rare, count };
+      })
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+      .map((x, i) => `${i + 1}. <@${x.id}> - ${x.rare} (${x.count}x)`)
+      .join("\n");
+
+    return message.reply(
+`📊 **Leaderboard**
+
+🔁 Total Rolls:
+${topRolls}
+
+⭐ Highest Level:
+${topLevel}
+
+💎 Rarest Rolls:
+${topRare}`
+    );
   }
 });
 
