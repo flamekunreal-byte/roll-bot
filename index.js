@@ -123,44 +123,37 @@ function giveDice(user) {
 
 // ================= ROLL =================
 function roll(luck) {
-  const c = (p,n,d)=>Math.random()<p*luck?{name:n,display:d}:null;
+  const c = (p, n, d) =>
+    Math.random() < p * luck ? { name: n, display: d } : null;
 
   return (
-    c(1e-8,"Everything III","1/100M")||
-    ...
-    c(1e-6,"Part II","1/6")||
-    {name:"Part I",display:"1/3"}
-  );
-}
-
-  return (
-    c(1e-8,"Everything III","1/100M")||
-    c(1e-7,"Everything II","1/10M")||
-    c(5e-7,"Everything I","1/5M")||
-    c(2e-6,"Deep Research III","1/2M")||
-    c(1e-6,"Deep Research II","1/1M")||
-    c(7.5e-6,"Deep Research I","1/750K")||
-    c(5e-6,"Automation III","1/500K")||
-    c(2.5e-5,"Automation II","1/250K")||
-    c(1.5e-5,"Automation I","1/150K")||
-    c(1e-4,"Tier III","1/100K")||
-    c(7.5e-4,"Tier II","1/75K")||
-    c(5e-4,"Tier I","1/50K")||
-    c(3e-4,"Dark Part III","1/30K")||
-    c(1.5e-4,"Dark Part II","1/15K")||
-    c(7e-4,"Dark Part I","1/7K")||
-    c(4e-4,"Rainbow Part III","1/4K")||
-    c(2e-4,"Rainbow Part II","1/2K")||
-    c(1e-3,"Rainbow Part I","1/1K")||
-    c(6e-4,"Gold Part III","1/600")||
-    c(3e-4,"Gold Part II","1/300")||
-    c(1.5e-4,"Gold Part I","1/150")||
-    c(7e-5,"Reset III","1/75")||
-    c(4e-5,"Reset II","1/40")||
-    c(2e-5,"Reset I","1/20")||
-    c(1e-5,"Part III","1/10")||
-    c(1e-6,"Part II","1/6")||
-    c(1e-4,"Part I","1/3")
+    c(1e-8, "Everything III", "1/100M") ||
+    c(1e-7, "Everything II", "1/10M") ||
+    c(5e-7, "Everything I", "1/5M") ||
+    c(2e-6, "Deep Research III", "1/2M") ||
+    c(1e-6, "Deep Research II", "1/1M") ||
+    c(7.5e-6, "Deep Research I", "1/750K") ||
+    c(5e-6, "Automation III", "1/500K") ||
+    c(2.5e-5, "Automation II", "1/250K") ||
+    c(1.5e-5, "Automation I", "1/150K") ||
+    c(1e-4, "Tier III", "1/100K") ||
+    c(7.5e-4, "Tier II", "1/75K") ||
+    c(5e-4, "Tier I", "1/50K") ||
+    c(3e-4, "Dark Part III", "1/30K") ||
+    c(1.5e-4, "Dark Part II", "1/15K") ||
+    c(7e-4, "Dark Part I", "1/7K") ||
+    c(4e-4, "Rainbow Part III", "1/4K") ||
+    c(2e-4, "Rainbow Part II", "1/2K") ||
+    c(1e-3, "Rainbow Part I", "1/1K") ||
+    c(6e-4, "Gold Part III", "1/600") ||
+    c(3e-4, "Gold Part II", "1/300") ||
+    c(1.5e-4, "Gold Part I", "1/150") ||
+    c(7e-5, "Reset III", "1/75") ||
+    c(4e-5, "Reset II", "1/40") ||
+    c(2e-5, "Reset I", "1/20") ||
+    c(1e-5, "Part III", "1/10") ||
+    c(1e-6, "Part II", "1/6") ||
+    { name: "Part I", display: "1/3" }
   );
 }
 
@@ -187,10 +180,8 @@ function getInterval(u){
 function startAutoroll(id){
   const u = getUser(id);
 
-  // 🔒 LOCK UNTIL REBIRTH 1
   if (u.rebirths < 1) return;
 
-  // prevent duplicates
   if (autorollIntervals[id]) return;
 
   autorollIntervals[id] = setInterval(() => {
@@ -208,11 +199,6 @@ function startAutoroll(id){
     saveData();
   }, getInterval(getUser(id)));
 }
-
-  autorollIntervals[id] = setInterval(() => {
-    const u = getUser(id);
-    const luck = getLuck(u.level,u.rebirths);
-    const r = roll(luck);
 
     u.rolls++;
     u.xp += points[r.name]||1;
