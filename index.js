@@ -519,64 +519,24 @@ XP: ${u.xp}/${xpNeeded(u.level)}
         )
         .join("\n");
 
-      const topLevel = [...entries]
-        .sort((a, b) => b[1].level - a[1].level)
-        .slice(0, 5)
-        .map((x, i) =>
-          `${i + 1}. ⭐ ${getName(x[0])} — Level ${x[1].level}`
-        )
-        .join("\n");
-
-      const topRebirths = [...entries]
-        .sort((a, b) => b[1].rebirths - a[1].rebirths)
-        .slice(0, 5)
-        .map((x, i) =>
-          `${i + 1}. 🔄 ${getName(x[0])} — ${x[1].rebirths}`
-        )
-        .join("\n");
-
-      const topRarest = [...entries]
-        .sort((a, b) => getRarestCount(b[1]) - getRarestCount(a[1]))
-        .slice(0, 5)
-        .map((x, i) => {
-          const u = x[1];
-          const rare = u.rarest || "None";
-          const count = getRarestCount(u);
-
-          return `${i + 1}. 💎 ${getName(x[0])} — ${rare} (${count})`;
-        })
-        .join("\n");
-
       return msg.reply({
         embeds: [
           new EmbedBuilder()
             .setColor(COLOR)
             .setTitle("📊 Leaderboards")
-            .addFields(
-              {
-                name: "🎲 Total Rolls",
-                value: tops || "None"
-              },
-              {
-                name: "⭐ Levels",
-                value: topLevel || "None"
-              },
-              {
-                name: "🔄 Rebirths",
-                value: topRebirths || "None"
-              },
-              {
-                name: "💎 Rarest Rolls",
-                value: topRarest || "None"
-              }
-            )
-            .setFooter({
-              text: "RNG Leaderboard System"
+            .addFields({
+              name: "🎲 Total Rolls",
+              value: tops || "None"
             })
-            .setTimestamp()
         ]
       });
     }
+
+  } catch (err) {
+    console.error(err);
+    msg.reply("An error occurred.");
+  }
+});
 
 // ================= LOGIN =================
 client.login(process.env.TOKEN);
