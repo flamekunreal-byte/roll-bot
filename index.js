@@ -271,7 +271,54 @@ client.on("messageCreate", async (msg) => {
 
     return;
   }
+// ================= PROFILE =================
+if (msg.content.startsWith("?profile")) {
+  const target = msg.mentions.users.first() || msg.author;
+  const p = getUser(target.id);
 
+  // calculate rarest count safely
+  let rareCount = 0;
+  if (p.rarest && p.owned?.[p.rarest]) {
+    rareCount = p.owned[p.rarest];
+  }
+
+  return msg.reply({
+    embeds: [
+      new EmbedBuilder()
+        .setColor(COLOR)
+        .setTitle(`📊 Profile - ${target.username}`)
+        .addFields(
+          {
+            name: "⭐ Level",
+            value: `**${p.level}**`,
+            inline: true
+          },
+          {
+            name: "🎲 Total Rolls",
+            value: `**${p.rolls}**`,
+            inline: true
+          },
+          {
+            name: "🔄 Rebirths",
+            value: `**${p.rebirths}**`,
+            inline: true
+          },
+          {
+            name: "💎 Rarest Roll",
+            value: `**${p.rarest || "None"}**\n🎯 Count: **${rareCount}**`,
+            inline: false
+          },
+          {
+            name: "📈 XP Progress",
+            value: `**${p.xp}/${xpNeeded(p.level)} XP**`,
+            inline: false
+          }
+        )
+        .setFooter({ text: "RNG System • Profile Data" })
+        .setTimestamp()
+    ]
+  });
+}
   // ================= INVENTORY =================
   if(msg.content === "?inv"){
     const i = u.inventory;
@@ -369,21 +416,76 @@ Rebirth 3+: AutoRoll speed -1s per rebirth (min 5s max reduction 5s)`
   }
 
   // ================= LEADERBOARD =================
-  if(msg.content === "?leaderboard"){
-    const top = Object.entries(userData)
-      .sort((a,b)=>b[1].rolls-a[1].rolls)
-      .slice(0,5)
-      .map((x,i)=>`${i+1}. 🎲 ${msg.guild.members.cache.get(x[0])?.displayName||"Unknown"} - ${x[1].rolls}`)
-      .join("\n");
+if (msg.content === "?leaderboard") {
 
-    return msg.reply({
-      embeds:[new EmbedBuilder()
+  const entries = Object.entries(userData);
+
+  const getName = (id) =>
+    msg.guild.members.cache.get(id)?.displayName || "Unknown";
+
+  // helper: count of rarest roll
+  const getRarestCount = (u) => {
+    if (!u.rarest) return 0;
+    return u.owned?.[u.rarest] || 0;
+  };
+
+  // TOP TOTAL ROLLS
+  const topRolls = [...entries]
+    .sort((a, b) => b[1].rolls - a[1].rolls)
+    .slice(0, 5)
+    .map((x, i) =>
+      `${i + 1}. 🎲 ${getName(x[0])} — ${x[1].rolls.toLocaleString()}`
+    )
+    .join("\n");
+
+  // TOP LEVEL
+  const topLevel = [...entries]
+    .sort((a, b) => b[1].level - a[1].level)
+    .slice(0, 5)
+    .map((x, i) =>
+      `${i + 1}. ⭐ ${getName(x[0])} — Level ${x[1].level}`
+    )
+    .join("\n");
+
+  // TOP REBIRTHS
+  const topRebirths = [...entries]
+    .sort((a, b) => b[1].rebirths - a[1].rebirths)
+    .slice(0, 5)
+    .map((x, i) =>
+      `${i + 1}. 🔄 ${getName(x[0])} — ${x[1].rebirths}`
+    )
+    .join("\n");
+
+  // RAREST + COUNT
+  const topRarest = [...entries]
+    .sort((a, b) => {
+      const br = getRarestCount(b[1]);
+      const ar = getRarestCount(a[1]);
+      return br - ar;
+    })
+    .slice(0, 5)
+    .map((x, i) => {
+      const u = x[1];
+      const rare = u.rarest || "None";
+      const count = getRarestCount(u);
+      return `${i + 1}. 💎 ${getName(x[0])} — ${rare} (${count})`;
+    })
+    .join("\n");
+
+  return msg.reply({
+    embeds: [
+      new EmbedBuilder()
         .setColor(COLOR)
-        .setTitle("📊 Leaderboard")
-        .setDescription(top)
-      ]
-    });
-  }
-});
+        .setTitle("📊 Leaderboards")
+        .addFields(
+          { name: "🎲 Total Rolls", value: topRolls || "None" },
+          { name: "⭐ Levels", value: topLevel || "None" },
+          { name: "🔄 Rebirths", value: topRebirths || "None" },
+          { name: "💎 Rarest Rolls", value: topRarest || "None" }
+        )
+        .setFooter({ text: "RNG Leaderboard System" })
+    ]
+  });
+}
 
 client.login(process.env.TOKEN);
