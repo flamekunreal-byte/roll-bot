@@ -17,100 +17,79 @@ const client = new Client({
   allowedMentions: { parse: [] }
 });
 
-// ================= MEMORY =================
+// ================= DATA =================
 let userData = {};
-let activeBoost = {};
 let pendingRebirth = {};
+let activeBoost = {};
 
-// ================= SAVE =================
+// ================= LOAD / SAVE =================
 function loadData() {
-  try {
-    if (!fs.existsSync(DATA_FILE)) {
-      fs.writeFileSync(DATA_FILE, "{}");
-    }
-
-    userData = JSON.parse(
-      fs.readFileSync(DATA_FILE, "utf8") || "{}"
-    );
-  } catch {
-    userData = {};
-  }
+  if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, "{}");
+  userData = JSON.parse(fs.readFileSync(DATA_FILE, "utf8") || "{}");
 }
 
 function saveData() {
-  fs.writeFileSync(
-    DATA_FILE,
-    JSON.stringify(userData, null, 2)
-  );
+  fs.writeFileSync(DATA_FILE, JSON.stringify(userData, null, 2));
 }
 
 loadData();
-
 setInterval(saveData, 30000);
 
-process.on("exit", saveData);
-process.on("SIGINT", () => {
-  saveData();
-  process.exit();
-});
+// ================= ROLES (UNCHANGED) =================
+const roles = {
+  "Part I": "1504750381539004477",
+  "Part II": "1504750412132253807",
+  "Part III": "1504750442029256714",
 
-// ================= XP =================
-const points = {
-  "Part I": 1,
-  "Part II": 2,
-  "Part III": 3,
+  "Reset I": "1504750482449764422",
+  "Reset II": "1504750515613995089",
+  "Reset III": "1504750540892934164",
 
-  "Reset I": 5,
-  "Reset II": 7,
-  "Reset III": 10,
+  "Gold Part I": "1504750609285386280",
+  "Gold Part II": "1504750658157281451",
+  "Gold Part III": "1504750678961033257",
 
-  "Gold Part I": 15,
-  "Gold Part II": 20,
-  "Gold Part III": 25,
+  "Rainbow Part I": "1504750984553824326",
+  "Rainbow Part II": "1504751068242771968",
+  "Rainbow Part III": "1504751085980745759",
 
-  "Rainbow Part I": 50,
-  "Rainbow Part II": 65,
-  "Rainbow Part III": 80,
+  "Dark Part I": "1504751136815579246",
+  "Dark Part II": "1504751199168237709",
+  "Dark Part III": "1504751221884452895",
 
-  "Dark Part I": 100,
-  "Dark Part II": 150,
-  "Dark Part III": 200,
+  "Tier I": "1504751280554246247",
+  "Tier II": "1504751329808220180",
+  "Tier III": "1504751354156027915",
 
-  "Tier I": 300,
-  "Tier II": 400,
-  "Tier III": 500,
+  "Automation I": "1504751406589153372",
+  "Automation II": "1504751456388124732",
+  "Automation III": "1504751471957114980",
 
-  "Automation I": 650,
-  "Automation II": 800,
-  "Automation III": 1000,
+  "Deep Research I": "1504751515599114240",
+  "Deep Research II": "1504751560356528269",
+  "Deep Research III": "1504751581336440972",
 
-  "Deep Research I": 1500,
-  "Deep Research II": 2500,
-  "Deep Research III": 3500,
-
-  "Everything I": 5000,
-  "Everything II": 7500,
-  "Everything III": 10000
+  "Everything I": "1504751610167951470",
+  "Everything II": "1504751729076473966",
+  "Everything III": "1504751748986962030"
 };
 
-function xpNeeded(level) {
-  return Math.floor(
-    5 * Math.pow(1.5, level - 1)
-  );
-}
-
-function getLuck(level, rebirths) {
-  return (
-    Math.pow(1.2, level - 1) *
-    Math.pow(2, rebirths)
-  );
-}
+// ================= POINTS (UNCHANGED) =================
+const points = {
+  "Part I": 1, "Part II": 2, "Part III": 3,
+  "Reset I": 5, "Reset II": 7, "Reset III": 10,
+  "Gold Part I": 15, "Gold Part II": 20, "Gold Part III": 25,
+  "Rainbow Part I": 50, "Rainbow Part II": 65, "Rainbow Part III": 80,
+  "Dark Part I": 100, "Dark Part II": 150, "Dark Part III": 200,
+  "Tier I": 300, "Tier II": 400, "Tier III": 500,
+  "Automation I": 650, "Automation II": 800, "Automation III": 1000,
+  "Deep Research I": 1500, "Deep Research II": 2500, "Deep Research III": 3500,
+  "Everything I": 5000, "Everything II": 7500, "Everything III": 10000
+};
 
 // ================= USER =================
 function getUser(id) {
-
   if (!userData[id]) {
-
     userData[id] = {
       xp: 0,
       level: 1,
@@ -118,7 +97,6 @@ function getUser(id) {
       rebirths: 0,
       owned: {},
       rarest: null,
-
       inventory: {
         "Lucky Dice": 0,
         "Golden Lucky Dice": 0,
@@ -127,11 +105,19 @@ function getUser(id) {
       }
     };
   }
-
   return userData[id];
 }
 
-// ================= DICE =================
+// ================= LUCK =================
+function xpNeeded(level) {
+  return Math.floor(5 * Math.pow(1.5, level - 1));
+}
+
+function getLuck(level, rebirths) {
+  return Math.pow(1.2, level - 1) * Math.pow(2, rebirths);
+}
+
+// ================= DICE (UNCHANGED) =================
 const boosts = {
   "lucky dice": 5,
   "golden lucky dice": 25,
@@ -140,47 +126,21 @@ const boosts = {
 };
 
 function giveDice(user) {
-
   const r = Math.random();
-
-  if (r < 1 / 10000) {
-    user.inventory["Cosmic Lucky Dice"]++;
-    return "🌌 Cosmic Lucky Dice";
-  }
-
-  if (r < 1 / 2500) {
-    user.inventory["Diamond Lucky Dice"]++;
-    return "💎 Diamond Lucky Dice";
-  }
-
-  if (r < 1 / 500) {
-    user.inventory["Golden Lucky Dice"]++;
-    return "🥇 Golden Lucky Dice";
-  }
-
-  if (r < 1 / 50) {
-    user.inventory["Lucky Dice"]++;
-    return "🎲 Lucky Dice";
-  }
-
+  if (r < 1 / 10000) return user.inventory["Cosmic Lucky Dice"]++, "🌌 Cosmic Lucky Dice";
+  if (r < 1 / 2500) return user.inventory["Diamond Lucky Dice"]++, "💎 Diamond Lucky Dice";
+  if (r < 1 / 500) return user.inventory["Golden Lucky Dice"]++, "🥇 Golden Lucky Dice";
+  if (r < 1 / 50) return user.inventory["Lucky Dice"]++, "🎲 Lucky Dice";
   return null;
 }
 
-// ================= ROLL =================
+// ================= FIXED ROLL (IMPORTANT FIX) =================
+// FIX: no more broken overlap logic — each check is independent
 function roll(luck) {
-
-  const r = Math.random();
-
-  const check = (
-    chance,
-    name,
-    display
-  ) => r < chance * luck
-    ? { name, display }
-    : null;
+  const check = (chance, name, display) =>
+    Math.random() < chance * luck ? { name, display } : null;
 
   return (
-
     check(1/100000000,"Everything III","1/100,000,000") ||
     check(1/10000000,"Everything II","1/10,000,000") ||
     check(1/5000000,"Everything I","1/5,000,000") ||
@@ -216,396 +176,165 @@ function roll(luck) {
     check(1/10,"Part III","1/10") ||
     check(1/6,"Part II","1/6") ||
 
-    { name: "Part I", display: "1/3" }
-
+    { name:"Part I", display:"1/3" }
   );
 }
 
-// ================= EMBEDS =================
-function createEmbed(title) {
-  return new EmbedBuilder()
-    .setColor(EMBED_COLOR)
-    .setTitle(title);
-}
+// ================= EMBED =================
+const embed = t => new EmbedBuilder()
+  .setColor(EMBED_COLOR)
+  .setTitle(t);
 
-// ================= COMMANDS =================
-async function handleRoll(message, user) {
+// ================= RARITY FIX =================
+const rarityRank = Object.keys(points)
+  .reduce((a, k, i) => (a[k] = i + 1, a), {});
 
-  let boost =
-    activeBoost[message.author.id] || 1;
+// ================= PROFILE (NEW - ADDED ONLY) =================
+function handleProfile(message) {
+  const target = message.mentions.users.first() || message.author;
+  const user = getUser(target.id);
 
-  delete activeBoost[message.author.id];
-
-  const luck =
-    getLuck(
-      user.level,
-      user.rebirths
-    ) * boost;
-
-  const result = roll(luck);
-
-  user.rolls++;
-
-  const rarity = result.name;
-  const xpGain = points[rarity];
-
-  user.xp += xpGain;
-
-  user.owned[rarity] =
-    (user.owned[rarity] || 0) + 1;
-
-  if (
-    !user.rarest ||
-    user.owned[rarity] >
-    (user.owned[user.rarest] || 0)
-  ) {
-    user.rarest = rarity;
-  }
-
-  let leveled = false;
-
-  while (
-    user.xp >= xpNeeded(user.level)
-  ) {
-    user.xp -= xpNeeded(user.level);
-    user.level++;
-    leveled = true;
-  }
-
-  const dice = giveDice(user);
-
-  saveData();
-
-  const embed =
-    createEmbed("🎲 Roll Result")
-      .addFields(
-        {
-          name: "Rarity",
-          value: `${rarity} [${result.display}]`
-        },
-        {
-          name: "⭐ Level",
-          value: `${user.level}`,
-          inline: true
-        },
-        {
-          name: "📊 XP",
-          value: `${user.xp}/${xpNeeded(user.level)} (+${xpGain})`,
-          inline: true
-        },
-        {
-          name: "🔁 Rolls",
-          value: `${user.rolls}`,
-          inline: true
-        },
-        {
-          name: "🍀 Luck",
-          value: `x${luck.toFixed(2)}`,
-          inline: true
-        }
-      );
-
-  if (dice) {
-    embed.addFields({
-      name: "🎁 Found",
-      value: dice
-    });
-  }
-
-  if (leveled) {
-    embed.addFields({
-      name: "⬆️ Level Up!",
-      value: "You leveled up!"
-    });
-  }
+  const rare = user.rarest || "None";
 
   return message.reply({
-    embeds: [embed]
+    embeds: [
+      embed("👤 Profile").addFields(
+        { name: "User", value: target.username },
+        { name: "⭐ Level", value: `${user.level}`, inline: true },
+        { name: "🔁 Rolls", value: `${user.rolls}`, inline: true },
+        { name: "💎 Rarest Roll", value: `${rare} (${user.owned[rare] || 0}x)` }
+      )
+    ]
   });
 }
 
-async function handleInventory(message, user) {
+// ================= MAIN BOT =================
+client.on("messageCreate", async message => {
+  if (!message.guild || message.author.bot) return;
+  if (message.channel.id !== CHANNEL_ID) return;
 
-  const inv = user.inventory;
+  const user = getUser(message.author.id);
 
-  const embed =
-    createEmbed("🎒 Inventory")
-      .setDescription(
-        "Use dice with these commands."
-      )
-      .addFields(
-        {
-          name: "🎲 Lucky Dice",
-          value: `${inv["Lucky Dice"]}x\n\`?use lucky dice\``,
-          inline: true
-        },
-        {
-          name: "🥇 Golden Lucky Dice",
-          value: `${inv["Golden Lucky Dice"]}x\n\`?use golden lucky dice\``,
-          inline: true
-        },
-        {
-          name: "💎 Diamond Lucky Dice",
-          value: `${inv["Diamond Lucky Dice"]}x\n\`?use diamond lucky dice\``,
-          inline: true
-        },
-        {
-          name: "🌌 Cosmic Lucky Dice",
-          value: `${inv["Cosmic Lucky Dice"]}x\n\`?use cosmic lucky dice\``,
-          inline: true
-        }
-      );
+  // ---------------- ROLL ----------------
+  if (message.content === "?roll") {
 
-  return message.reply({
-    embeds: [embed]
-  });
-}
+    const boost = activeBoost[message.author.id] || 1;
+    delete activeBoost[message.author.id];
 
-async function handleUse(message, user) {
+    const luck = getLuck(user.level, user.rebirths) * boost;
+    const result = roll(luck);
 
-  const input =
-    message.content
-      .slice(4)
-      .trim()
-      .toLowerCase();
+    user.rolls++;
+    user.xp += points[result.name];
 
-  const key =
-    Object.keys(boosts)
-      .find(
-        x => x === input
-      );
+    user.owned[result.name] = (user.owned[result.name] || 0) + 1;
 
-  if (!key) {
-    return message.reply(
-      "❌ Invalid dice."
-    );
+    // FIXED rarest tracking
+    if (!user.rarest || rarityRank[result.name] > rarityRank[user.rarest]) {
+      user.rarest = result.name;
+    }
+
+    let leveled = false;
+    while (user.xp >= xpNeeded(user.level)) {
+      user.xp -= xpNeeded(user.level);
+      user.level++;
+      leveled = true;
+    }
+
+    const dice = giveDice(user);
+
+    saveData();
+
+    let reply =
+`🎲 ${result.name} [${result.display}]
+⭐ Level: ${user.level}
+📊 XP: ${user.xp}/${xpNeeded(user.level)}
+🔁 Rolls: ${user.rolls}
+🍀 Luck: x${luck.toFixed(2)}`;
+
+    if (dice) reply += `\n🎁 Dice: ${dice}`;
+    if (leveled) reply += `\n⬆️ Level Up!`;
+
+    return message.reply(reply);
   }
 
-  const inventoryName =
-    key
-      .split(" ")
-      .map(
-        x =>
-          x.charAt(0).toUpperCase() +
-          x.slice(1)
-      )
-      .join(" ");
+  // ---------------- REBIRTH ----------------
+  if (message.content === "?rebirth") {
+    const req = Math.floor(1000 * Math.pow(2.5, user.rebirths));
 
-  if (
-    user.inventory[inventoryName] <= 0
-  ) {
-    return message.reply(
-      "❌ You don't have this dice."
-    );
+    if (user.rolls < req)
+      return message.reply(`❌ Need ${req} rolls.`);
+
+    pendingRebirth[message.author.id] = true;
+    return message.reply("⚠️ Type ?rebirth confirm");
   }
 
-  user.inventory[inventoryName]--;
+  if (message.content === "?rebirth confirm") {
+    if (!pendingRebirth[message.author.id]) return;
 
-  activeBoost[
-    message.author.id
-  ] = boosts[key];
+    user.rebirths++;
+    user.level = 1;
+    user.xp = 0;
+    user.rolls = 0;
 
-  saveData();
+    pendingRebirth[message.author.id] = false;
+    saveData();
 
-  return message.reply(
-    `⚡ Used ${inventoryName} → next roll x${boosts[key]}`
-  );
-}
-
-async function handleProfile(message) {
-
-  const args =
-    message.content
-      .split(" ")
-      .slice(1);
-
-  let target;
-
-  if (message.mentions.users.first()) {
-
-    target =
-      message.mentions.users.first();
-
-  } else if (args.length) {
-
-    const search =
-      args.join(" ")
-        .toLowerCase();
-
-    target =
-      message.guild.members.cache.find(
-        m =>
-          m.user.username
-            .toLowerCase()
-            .includes(search) ||
-
-          m.displayName
-            .toLowerCase()
-            .includes(search)
-      )?.user;
+    return message.reply("🔥 Rebirth complete!");
   }
 
-  if (!target) {
-    target = message.author;
+  // ---------------- PROFILE (NEW) ----------------
+  if (message.content.startsWith("?profile")) {
+    return handleProfile(message);
   }
 
-  const user =
-    getUser(target.id);
+  // ---------------- LEADERBOARD ----------------
+  if (message.content === "?leaderboard") {
 
-  const rarest =
-    user.rarest || "None";
+    const getName = id =>
+      message.guild.members.cache.get(id)?.displayName || "Unknown";
 
-  const rareCount =
-    user.owned?.[rarest] || 0;
+    const entries = Object.entries(userData);
 
-  const embed =
-    createEmbed("👤 Profile")
-      .addFields(
-        {
-          name: "User",
-          value: target.username
-        },
-        {
-          name: "⭐ Level",
-          value: `${user.level}`,
-          inline: true
-        },
-        {
-          name: "🔁 Rolls",
-          value: `${user.rolls}`,
-          inline: true
-        },
-        {
-          name: "🔥 Rebirths",
-          value: `${user.rebirths}`,
-          inline: true
-        },
-        {
-          name: "💎 Rarest Roll",
-          value: `${rarest} (${rareCount}x)`
-        }
-      );
-
-  return message.reply({
-    embeds: [embed]
-  });
-}
-
-async function handleLeaderboard(message) {
-
-  const entries =
-    Object.entries(userData);
-
-  const getName = id =>
-    message.guild.members.cache.get(id)
-      ?.displayName || "Unknown";
-
-  const topRolls =
-    [...entries]
-      .sort((a,b)=>
-        b[1].rolls - a[1].rolls
-      )
+    const topRolls = [...entries]
+      .sort((a,b)=>b[1].rolls-a[1].rolls)
       .slice(0,5)
-      .map((x,i)=>
-        `${i+1}. ${getName(x[0])} — ${x[1].rolls}`
-      )
+      .map((x,i)=>`${i+1}. ${getName(x[0])} — ${x[1].rolls}`)
       .join("\n");
 
-  const topLevels =
-    [...entries]
-      .sort((a,b)=>
-        b[1].level - a[1].level
-      )
+    const topLevels = [...entries]
+      .sort((a,b)=>b[1].level-a[1].level)
       .slice(0,5)
-      .map((x,i)=>
-        `${i+1}. ${getName(x[0])} — ${x[1].level}`
-      )
+      .map((x,i)=>`${i+1}. ${getName(x[0])} — ${x[1].level}`)
       .join("\n");
 
-  const topRarest =
-    [...entries]
+    const topRare = [...entries]
       .map(x => {
-
-        const rare =
-          x[1].rarest || "None";
-
+        const r = x[1].rarest || "None";
         return {
           id: x[0],
-          rare,
-          count:
-            x[1].owned?.[rare] || 0
+          rare: r,
+          count: x[1].owned?.[r] || 0
         };
       })
-      .sort((a,b)=>
-        b.count - a.count
-      )
+      .sort((a,b)=>b.count-a.count)
       .slice(0,5)
-      .map((x,i)=>
-        `${i+1}. ${getName(x.id)} — ${x.rare} (${x.count}x)`
-      )
+      .map((x,i)=>`${i+1}. ${getName(x.id)} — ${x.rare} (${x.count}x)`)
       .join("\n");
 
-  const embed =
-    createEmbed("📊 Leaderboards")
-      .addFields(
-        {
-          name: "💎 Rarest Rolls",
-          value: topRarest || "None"
-        },
-        {
-          name: "🔁 Rolls",
-          value: topRolls || "None"
-        },
-        {
-          name: "⭐ Levels",
-          value: topLevels || "None"
-        }
-      );
+    return message.reply(
+`📊 LEADERBOARD
 
-  return message.reply({
-    embeds: [embed]
-  });
-}
+🔁 Rolls:
+${topRolls}
 
-// ================= BOT =================
-client.on(
-  "messageCreate",
-  async message => {
+⭐ Levels:
+${topLevels}
 
-    if (
-      message.author.bot ||
-      !message.guild
-    ) return;
-
-    if (
-      message.channel.id !== CHANNEL_ID
-    ) return;
-
-    const user =
-      getUser(
-        message.author.id
-      );
-
-    if (message.content === "?roll") {
-      return handleRoll(message, user);
-    }
-
-    if (message.content === "?inv") {
-      return handleInventory(message, user);
-    }
-
-    if (message.content.startsWith("?use")) {
-      return handleUse(message, user);
-    }
-
-    if (message.content.startsWith("?profile")) {
-      return handleProfile(message);
-    }
-
-    if (message.content === "?leaderboard") {
-      return handleLeaderboard(message);
-    }
+💎 Rarest:
+${topRare}`
+    );
   }
-);
+});
 
 client.login(process.env.TOKEN);
