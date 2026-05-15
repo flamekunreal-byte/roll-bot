@@ -53,16 +53,14 @@ const roleRewards = {
   "Everything III": "1504751748986962030"
 };
 
-// ================= SAVE / LOAD =================
+// ================= SAVE =================
 function loadData() {
   if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, "{}");
   userData = JSON.parse(fs.readFileSync(DATA_FILE, "utf8") || "{}");
 }
-
 function saveData() {
   fs.writeFileSync(DATA_FILE, JSON.stringify(userData, null, 2));
 }
-
 loadData();
 
 // ================= USER =================
@@ -86,14 +84,9 @@ function getUser(id) {
   return userData[id];
 }
 
-// ================= STATS =================
-function xpNeeded(level) {
-  return Math.floor(5 * Math.pow(1.5, level - 1));
-}
-
-function getLuck(level, rebirths) {
-  return Math.pow(1.2, level - 1) * Math.pow(2, rebirths);
-}
+// ================= XP / LUCK =================
+const xpNeeded = (l) => Math.floor(5 * Math.pow(1.5, l - 1));
+const getLuck = (l, r) => Math.pow(1.2, l - 1) * Math.pow(2, r);
 
 // ================= POINTS =================
 const points = {
@@ -109,14 +102,13 @@ const points = {
 };
 
 // ================= DICE =================
-function giveDice(user) {
+function giveDice(u) {
   const r = Math.random();
 
-  if (r < 0.0001) return user.inventory["Cosmic Lucky Dice"]++, "🌌 Cosmic Dice";
-  if (r < 0.001) return user.inventory["Diamond Lucky Dice"]++, "💎 Diamond Dice";
-  if (r < 0.01) return user.inventory["Golden Lucky Dice"]++, "🥇 Golden Dice";
-  if (r < 0.05) return user.inventory["Lucky Dice"]++, "🎲 Lucky Dice";
-
+  if (r < 0.0001) return u.inventory["Cosmic Lucky Dice"]++, "🌌 Cosmic Dice";
+  if (r < 0.001) return u.inventory["Diamond Lucky Dice"]++, "💎 Diamond Dice";
+  if (r < 0.01) return u.inventory["Golden Lucky Dice"]++, "🥇 Golden Dice";
+  if (r < 0.05) return u.inventory["Lucky Dice"]++, "🎲 Lucky Dice";
   return null;
 }
 
@@ -167,12 +159,12 @@ function effect(n){
 }
 
 // ================= AUTOROLL SPEED =================
-function getInterval(u){
+function interval(u){
   let base = 10;
   if(u.rebirths >= 3){
     base -= Math.min(u.rebirths - 2, 5);
   }
-  return Math.max(base, 5) * 1000;
+  return Math.max(base,5)*1000;
 }
 
 // ================= AUTOROLL =================
@@ -192,7 +184,7 @@ function startAutoroll(id){
     autorollLogs[id].push(r);
 
     saveData();
-  }, getInterval(getUser(id)));
+  }, interval(getUser(id)));
 }
 
 // ================= BOT =================
@@ -202,44 +194,37 @@ client.on("messageCreate", async msg => {
   const u = getUser(msg.author.id);
   const isAdmin = msg.member?.permissions?.has(PermissionFlagsBits.Administrator);
 
-  lastSeen[msg.author.id] = Date.now();
-
-  // AUTOROLL SUMMARY
-  if(autorollLogs[msg.author.id]?.length){
-    const log = autorollLogs[msg.author.id];
-    autorollLogs[msg.author.id]=[];
-
-    msg.channel.send({
-      embeds:[new EmbedBuilder()
-        .setColor(COLOR)
-        .setTitle("⏳ Autoroll Summary")
-        .setDescription(log.map(x=>"🎲 "+x.name).join("\n"))
-      ]
-    });
+  // ================= AUTOROLL SUMMARY ON RETURN =================
+  const now = Date.now();
+  if(lastSeen[msg.author.id] && now - lastSeen[msg.author.id] > 15000){
+    const log = autorollLogs[msg.author.id] || [];
+    if(log.length){
+      msg.channel.send({
+        embeds:[new EmbedBuilder()
+          .setColor(COLOR)
+          .setTitle("📜 Autoroll Summary")
+          .setDescription(log.slice(-20).map(x=>`🎲 ${x.name}`).join("\n"))
+        ]
+      });
+      autorollLogs[msg.author.id] = [];
+    }
   }
+  lastSeen[msg.author.id] = now;
 
   // ================= ROLL =================
-  if(msg.content==="?roll"){
+  if(msg.content === "?roll"){
     startAutoroll(msg.author.id);
 
-    const luck = getLuck(u.level,u.rebirths) * (activeBoost[msg.author.id]||1);
+    const luck = getLuck(u.level,u.rebirths)*(activeBoost[msg.author.id]||1);
     delete activeBoost[msg.author.id];
 
     let anim = await msg.reply("🎲 Rolling...");
+
     const r = roll(luck);
 
     u.rolls++;
     u.xp += points[r.name]||1;
     u.owned[r.name]=(u.owned[r.name]||0)+1;
-
-    if(!u.rarest || (points[r.name]||0)>(points[u.rarest]||0)) u.rarest=r.name;
-
-    let leveled=false;
-    while(u.xp>=xpNeeded(u.level)){
-      u.xp-=xpNeeded(u.level);
-      u.level++;
-      leveled=true;
-    }
 
     const dice = giveDice(u);
     saveData();
@@ -257,7 +242,6 @@ client.on("messageCreate", async msg => {
       .setFooter({text:`RNG System Luck Engine Active • ${new Date().toLocaleTimeString()}`});
 
     if(dice) embed.addFields({name:"🎁 Dice",value:dice});
-    if(leveled) embed.addFields({name:"⬆️ Level Up!",value:"LEVEL UP!"});
 
     await anim.edit({embeds:[embed]});
 
@@ -267,27 +251,8 @@ client.on("messageCreate", async msg => {
     return;
   }
 
-  // ================= PROFILE =================
-  if(msg.content.startsWith("?profile")){
-    const user = msg.mentions.users.first()||msg.author;
-    const p = getUser(user.id);
-
-    return msg.reply({
-      embeds:[new EmbedBuilder()
-        .setColor(COLOR)
-        .setTitle(`📊 Profile - ${user.username}`)
-        .addFields(
-          {name:"⭐ Level",value:`${p.level}`,inline:true},
-          {name:"🔁 Rolls",value:`${p.rolls}`,inline:true},
-          {name:"🔄 Rebirths",value:`${p.rebirths}`,inline:true},
-          {name:"💎 Rarest",value:`${p.rarest||"None"}`}
-        )
-      ]
-    });
-  }
-
   // ================= INVENTORY =================
-  if(msg.content==="?inv"){
+  if(msg.content === "?inv"){
     const i = u.inventory;
     return msg.reply({
       embeds:[new EmbedBuilder()
@@ -300,100 +265,72 @@ client.on("messageCreate", async msg => {
     });
   }
 
-// ================= ADMIN COMMANDS =================
-if (isAdmin) {
+  // ================= USE =================
+  if(msg.content.startsWith("?use")){
+    const type = msg.content.slice(4).trim().toLowerCase();
+    const map = {
+      "lucky dice":5,
+      "golden lucky dice":25,
+      "diamond lucky dice":100,
+      "cosmic lucky dice":1000
+    };
 
-  // SET ROLLS
-  if (msg.content.startsWith("?setrolls")) {
-    const user = msg.mentions.users.first();
-    const amount = parseInt(msg.content.split(" ")[2]);
+    const key = Object.keys(map).find(k=>k===type);
+    if(!key) return msg.reply("Invalid");
+    if(u.inventory[key]<=0) return msg.reply("None");
 
-    if (!user || isNaN(amount)) return msg.reply("❌ Usage: ?setrolls @user amount");
-
-    getUser(user.id).rolls = amount;
-    saveData();
-    return msg.reply("✅ Rolls updated");
-  }
-
-  // SET LEVEL
-  if (msg.content.startsWith("?setlevel")) {
-    const user = msg.mentions.users.first();
-    const amount = parseInt(msg.content.split(" ")[2]);
-
-    if (!user || isNaN(amount)) return msg.reply("❌ Usage: ?setlevel @user amount");
-
-    getUser(user.id).level = amount;
-    saveData();
-    return msg.reply("✅ Level updated");
-  }
-
-  // SET REBIRTH
-  if (msg.content.startsWith("?setrebirth")) {
-    const user = msg.mentions.users.first();
-    const amount = parseInt(msg.content.split(" ")[2]);
-
-    if (!user || isNaN(amount)) return msg.reply("❌ Usage: ?setrebirth @user amount");
-
-    getUser(user.id).rebirths = amount;
-    saveData();
-    return msg.reply("✅ Rebirth updated");
-  }
-
-  // ADD/REMOVE ROLLS
-  if (msg.content.startsWith("?rolls")) {
-    const [, action, amount] = msg.content.split(" ");
-    const val = parseInt(amount);
-
-    if (isNaN(val)) return msg.reply("❌ Invalid amount");
-
-    if (action === "add") u.rolls += val;
-    if (action === "remove") u.rolls = Math.max(0, u.rolls - val);
+    u.inventory[key]--;
+    activeBoost[msg.author.id]=map[key];
 
     saveData();
-    return msg.reply("✅ Rolls modified");
+    return msg.reply(`Used ${key}`);
   }
 
-  // GIVE DICE
-  if (msg.content.startsWith("?give dice")) {
-    const args = msg.content.split(" ");
-    const user = msg.mentions.users.first();
-    const amount = parseInt(args[args.length - 1]);
-    const type = args.slice(3, args.length - 1).join(" ").toLowerCase();
+  // ================= REBIRTH =================
+  if(msg.content === "?rebirth"){
+    const req = Math.floor(1000*Math.pow(2.5,u.rebirths));
+    if(u.rolls<req) return msg.reply(`Need ${req}`);
 
-    if (!user || isNaN(amount)) return msg.reply("❌ Usage: ?give dice @user type amount");
+    u.rebirths++;
+    u.level=1;
+    u.xp=0;
+    u.rolls=0;
 
-    const inv = getUser(user.id).inventory;
-    const key = Object.keys(inv).find(k => k.toLowerCase() === type);
-
-    if (!key) return msg.reply("❌ Invalid dice type");
-
-    inv[key] += amount;
     saveData();
-    return msg.reply(`✅ Gave ${amount} ${key}`);
+
+    return msg.reply("Rebirth complete");
   }
 
-  // REMOVE DICE
-  if (msg.content.startsWith("?remove dice")) {
-    const args = msg.content.split(" ");
-    const user = msg.mentions.users.first();
-    const amount = parseInt(args[args.length - 1]);
-    const type = args.slice(3, args.length - 1).join(" ").toLowerCase();
+  // ================= ADMIN =================
+  if(isAdmin){
 
-    if (!user || isNaN(amount)) return msg.reply("❌ Usage: ?remove dice @user type amount");
+    if(msg.content.startsWith("?setrolls")){
+      const user = msg.mentions.users.first();
+      const val = parseInt(msg.content.split(" ")[2]);
+      getUser(user.id).rolls = val;
+      saveData();
+      return msg.reply("ok");
+    }
 
-    const inv = getUser(user.id).inventory;
-    const key = Object.keys(inv).find(k => k.toLowerCase() === type);
+    if(msg.content.startsWith("?setlevel")){
+      const user = msg.mentions.users.first();
+      const val = parseInt(msg.content.split(" ")[2]);
+      getUser(user.id).level = val;
+      saveData();
+      return msg.reply("ok");
+    }
 
-    if (!key) return msg.reply("❌ Invalid dice type");
-
-    inv[key] = Math.max(0, inv[key] - amount);
-    saveData();
-    return msg.reply(`✅ Removed ${amount} ${key}`);
+    if(msg.content.startsWith("?setrebirth")){
+      const user = msg.mentions.users.first();
+      const val = parseInt(msg.content.split(" ")[2]);
+      getUser(user.id).rebirths = val;
+      saveData();
+      return msg.reply("ok");
+    }
   }
-}
-  
+
   // ================= LEADERBOARD =================
-  if(msg.content==="?leaderboard"){
+  if(msg.content === "?leaderboard"){
     const top = Object.entries(userData)
       .sort((a,b)=>b[1].rolls-a[1].rolls)
       .slice(0,5)
