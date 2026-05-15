@@ -497,7 +497,6 @@ XP: ${u.xp}/${xpNeeded(u.level)}
     msg.reply("An error occurred.");
   }
 });
-
     // ================= RAREST LEADERBOARD =================
     if (msg.content === "?leaderboard") {
 
@@ -543,13 +542,14 @@ XP: ${u.xp}/${xpNeeded(u.level)}
             .setColor(COLOR)
             .setTitle("💎 Rarest Roll Leaderboard")
             .setDescription(leaderboard || "No data")
-            .setFooter({
-              text: "RNG Rarest Rankings"
-            })
-            .setTimestamp()
         ]
       });
     }
 
-// ================= LOGIN =================
+  } catch (err) {
+    console.error(err);
+    msg.reply("An error occurred.");
+  }
+});
+
 client.login(process.env.TOKEN);
