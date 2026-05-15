@@ -8,7 +8,6 @@ const client = new Client({
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.MessageContent
   ],
-  // 🔥 THIS STOPS USER PINGS IN MESSAGES
   allowedMentions: { parse: [] }
 });
 
@@ -216,7 +215,6 @@ client.on("messageCreate", async (message) => {
       user.rarest = rarity;
     }
 
-    // level up
     let leveled = false;
     while (user.xp >= xpNeeded(user.level)) {
       user.xp -= xpNeeded(user.level);
@@ -273,31 +271,40 @@ client.on("messageCreate", async (message) => {
     return message.reply(`🔥 Rebirth complete! Luck multiplier increased.`);
   }
 
-  // ---------------- LEADERBOARD ----------------
+  // ---------------- LEADERBOARD (FIXED) ----------------
   if (message.content === "?leaderboard") {
     const entries = Object.entries(userData);
+
+    const getName = (id) => {
+      const member = message.guild.members.cache.get(id);
+      return (
+        member?.displayName ||
+        member?.user?.username ||
+        "Unknown User"
+      );
+    };
 
     const topRolls = [...entries]
       .sort((a, b) => (b[1].rolls || 0) - (a[1].rolls || 0))
       .slice(0, 5)
-      .map((x, i) => `${i + 1}. UserID:${x[0]} - ${x[1].rolls} rolls`)
+      .map((x, i) => `${i + 1}. ${getName(x[0])} - ${x[1].rolls} rolls`)
       .join("\n");
 
     const topLevels = [...entries]
       .sort((a, b) => (b[1].level || 1) - (a[1].level || 1))
       .slice(0, 5)
-      .map((x, i) => `${i + 1}. UserID:${x[0]} - Level ${x[1].level}`)
+      .map((x, i) => `${i + 1}. ${getName(x[0])} - Level ${x[1].level}`)
       .join("\n");
 
     const topRare = [...entries]
       .map(x => {
         const u = x[1];
         const rare = u.rarest || "None";
-        return { id: x[0], rare, count: u.owned?.[rare] || 0 };
+        return { id: x[0], name: getName(x[0]), rare, count: u.owned?.[rare] || 0 };
       })
       .sort((a, b) => b.count - a.count)
       .slice(0, 5)
-      .map((x, i) => `${i + 1}. UserID:${x.id} - ${x.rare} (${x.count}x)`)
+      .map((x, i) => `${i + 1}. ${x.name} - ${x.rare} (${x.count}x)`)
       .join("\n");
 
     return message.reply(
