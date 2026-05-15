@@ -352,28 +352,57 @@ client.on("messageCreate", async (msg) => {
     return msg.reply("Removed dice");
   }
 
-  // ================= LEADERBOARD =================
-  if (msg.content === "?leaderboard") {
-    const entries = Object.entries(userData);
+// ================= LEADERBOARD =================
+if (msg.content === "?leaderboard") {
+  const entries = Object.entries(userData);
 
-    const topRolls = entries.sort((a,b)=>b[1].rolls-a[1].rolls).slice(0,5).map((x,i)=>`${i+1}. ${x[0]} - ${x[1].rolls}`).join("\n");
-    const topLevels = entries.sort((a,b)=>b[1].level-a[1].level).slice(0,5).map((x,i)=>`${i+1}. ${x[0]} - ${x[1].level}`).join("\n");
+  const getName = (id) => {
+    const member = msg.guild.members.cache.get(id);
+    return member?.displayName || member?.user?.username || "Unknown";
+  };
 
-    const topRare = entries.map(x=>x).slice(0,5).map((x,i)=>`${i+1}. ${x[0]} - ${x[1].rarest || "None"}`).join("\n");
+  const topRolls = entries
+    .sort((a, b) => b[1].rolls - a[1].rolls)
+    .slice(0, 5)
+    .map((x, i) => `${i + 1}. ${getName(x[0])} - ${x[1].rolls}`)
+    .join("\n");
 
-    return msg.reply({
-      embeds: [
-        new EmbedBuilder()
-          .setColor(COLOR)
-          .setTitle("📊 Leaderboards")
-          .addFields(
-            { name: "🔁 Rolls", value: topRolls || "None" },
-            { name: "⭐ Levels", value: topLevels || "None" },
-            { name: "💎 Rarest", value: topRare || "None" }
-          )
-      ]
-    });
-  }
-});
+  const topLevels = entries
+    .sort((a, b) => b[1].level - a[1].level)
+    .slice(0, 5)
+    .map((x, i) => `${i + 1}. ${getName(x[0])} - ${x[1].level}`)
+    .join("\n");
+
+  const topRebirths = entries
+    .sort((a, b) => b[1].rebirths - a[1].rebirths)
+    .slice(0, 5)
+    .map((x, i) => `${i + 1}. ${getName(x[0])} - ${x[1].rebirths}`)
+    .join("\n");
+
+  const topRare = entries
+    .map(x => ({
+      id: x[0],
+      rare: x[1].rarest || "None",
+      count: x[1].owned?.[x[1].rarest] || 0
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5)
+    .map((x, i) => `${i + 1}. ${getName(x.id)} - ${x.rare} (${x.count})`)
+    .join("\n");
+
+  return msg.reply({
+    embeds: [
+      new EmbedBuilder()
+        .setColor(COLOR)
+        .setTitle("📊 Leaderboards")
+        .addFields(
+          { name: "🔁 Rolls", value: topRolls || "None" },
+          { name: "⭐ Levels", value: topLevels || "None" },
+          { name: "🔄 Rebirths", value: topRebirths || "None" },
+          { name: "💎 Rarest", value: topRare || "None" }
+        )
+    ]
+  });
+}
 
 client.login(process.env.TOKEN);
