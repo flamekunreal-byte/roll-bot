@@ -159,7 +159,7 @@ function giveDice(user) {
     user.inventory["Golden Lucky Dice"]++;
     return "🥇 Golden Lucky Dice";
   }
-  if (r < 1 / 50) {
+  if (r < 1 / 5) {
     user.inventory["Lucky Dice"]++;
     return "🎲 Lucky Dice";
   }
