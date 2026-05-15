@@ -11,28 +11,51 @@ const client = new Client({
   allowedMentions: { parse: [] }
 });
 
+// 🔒 ONLY CHANGE THIS
+const ALLOWED_CHANNEL_ID = "PUT_YOUR_CHANNEL_ID_HERE";
+
 // -------------------- DATA --------------------
 const DATA_FILE = "./data.json";
 
 let userData = {};
 let pendingRebirth = {};
-let activeBoost = {}; // NEW
+let activeBoost = {};
 
+// safer load/save (prevents corruption/reset issues)
 function loadData() {
-  if (fs.existsSync(DATA_FILE)) {
-    try {
-      userData = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-    } catch {
-      userData = {};
+  try {
+    if (!fs.existsSync(DATA_FILE)) {
+      fs.writeFileSync(DATA_FILE, "{}");
     }
+
+    const raw = fs.readFileSync(DATA_FILE, "utf8");
+    userData = raw ? JSON.parse(raw) : {};
+  } catch (err) {
+    console.error("Load error:", err);
+    userData = {};
   }
 }
 
 function saveData() {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(userData, null, 2));
+  try {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(userData, null, 2));
+  } catch (err) {
+    console.error("Save error:", err);
+  }
 }
 
 loadData();
+
+// auto-save protection
+process.on("exit", saveData);
+process.on("SIGINT", () => {
+  saveData();
+  process.exit();
+});
+process.on("uncaughtException", (err) => {
+  console.error(err);
+  saveData();
+});
 
 // -------------------- ROLES --------------------
 const roles = {
@@ -123,7 +146,6 @@ function getUser(id) {
       owned: {},
       rarest: null,
 
-      // NEW INVENTORY
       inventory: {
         "Lucky Dice": 0,
         "Golden Lucky Dice": 0,
@@ -143,7 +165,7 @@ function getLuck(level, rebirths) {
   return Math.pow(1.2, level - 1) * Math.pow(2, rebirths);
 }
 
-// -------------------- DICE SYSTEM (NOT BOOSTED) --------------------
+// -------------------- DICE DROPS (NOT BOOSTED) --------------------
 function giveDice(user) {
   const r = Math.random();
 
@@ -159,7 +181,7 @@ function giveDice(user) {
     user.inventory["Golden Lucky Dice"]++;
     return "🥇 Golden Lucky Dice";
   }
-  if (r < 1 / 5) {
+  if (r < 1 / 50) {
     user.inventory["Lucky Dice"]++;
     return "🎲 Lucky Dice";
   }
@@ -172,9 +194,7 @@ function roll(luck) {
   const r = Math.random();
 
   const check = (chance, name, display) => {
-    if (r < chance * luck) {
-      return { name, display };
-    }
+    if (r < chance * luck) return { name, display };
     return null;
   };
 
@@ -222,6 +242,9 @@ function roll(luck) {
 client.on("messageCreate", async (message) => {
   if (message.author.bot || !message.guild) return;
 
+  // 🔒 channel lock
+  if (message.channel.id !== ALLOWED_CHANNEL_ID) return;
+
   const user = getUser(message.member.id);
 
   // ---------------- ROLL ----------------
@@ -264,7 +287,7 @@ client.on("messageCreate", async (message) => {
 🔁 Rolls: ${user.rolls}
 🍀 Luck: x${luck.toFixed(2)}`;
 
-    if (dice) reply += `\n✨ You found: ${dice}`;
+    if (dice) reply += `\n✨ Found: ${dice}`;
     if (leveled) reply += `\n⬆️ Level up!`;
 
     return message.reply(reply);
@@ -283,42 +306,32 @@ client.on("messageCreate", async (message) => {
 🌌 Cosmic Lucky Dice: ${inv["Cosmic Lucky Dice"]}`
     );
   }
-// ---------------- USE DICE ----------------
-if (message.content.toLowerCase().startsWith("?use")) {
 
-  const raw = message.content.slice(4).trim().toLowerCase();
+  // ---------------- USE DICE ----------------
+  if (message.content.startsWith("?use")) {
 
-  const normalize = (str) => str.toLowerCase();
+    const input = message.content.slice(4).trim().toLowerCase();
 
-  const boosts = {
-    "lucky dice": 5,
-    "golden lucky dice": 25,
-    "diamond lucky dice": 100,
-    "cosmic lucky dice": 1000
-  };
+    const boosts = {
+      "lucky dice": 5,
+      "golden lucky dice": 25,
+      "diamond lucky dice": 100,
+      "cosmic lucky dice": 1000
+    };
 
-  // match ignoring emojis and weird formatting
-  const matchKey = Object.keys(boosts).find(k =>
-    normalize(k) === raw
-  );
+    const key = Object.keys(boosts).find(k => k === input);
 
-  if (!matchKey) {
-    return message.reply("❌ Invalid item. Use: ?use Lucky Dice");
+    if (!key) return message.reply("❌ Invalid item.");
+    if (user.inventory[key] <= 0) return message.reply("❌ You don't have this item.");
+
+    user.inventory[key]--;
+    activeBoost[message.member.id] = boosts[key];
+
+    saveData();
+
+    return message.reply(`⚡ Used **${key}** → Next roll x${boosts[key]} luck!`);
   }
 
-  if (user.inventory[matchKey] <= 0) {
-    return message.reply("❌ You don't have this item.");
-  }
-
-  user.inventory[matchKey]--;
-  activeBoost[message.member.id] = boosts[matchKey];
-
-  saveData();
-
-  return message.reply(
-    `⚡ Used **${matchKey}** → Next roll x${boosts[matchKey]} luck!`
-  );
-}
   // ---------------- REBIRTH ----------------
   if (message.content === "?rebirth") {
     const required = Math.floor(1000 * Math.pow(2.5, user.rebirths));
@@ -345,7 +358,7 @@ if (message.content.toLowerCase().startsWith("?use")) {
     return message.reply("🔥 Rebirth complete!");
   }
 
-  // ---------------- LEADERBOARD (FIXED) ----------------
+  // ---------------- LEADERBOARD ----------------
   if (message.content === "?leaderboard") {
     const entries = Object.entries(userData);
 
