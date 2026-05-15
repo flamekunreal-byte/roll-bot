@@ -53,7 +53,7 @@ function getUser(id) {
   return userData[id];
 }
 
-// ---------------- MATH ----------------
+// ---------------- STATS ----------------
 function xpNeeded(level) {
   return Math.floor(5 * Math.pow(1.5, level - 1));
 }
@@ -172,18 +172,18 @@ client.on("messageCreate", async (msg) => {
 
     const embed = new EmbedBuilder()
       .setColor(COLOR)
-      .setTitle(`🎲 ${r.name}`)
+      .setTitle("🎲 Roll Result")
       .addFields(
-        { name: "Rarity", value: r.display },
-        { name: "XP Gained", value: `+${xpGain}`, inline: true },
-        { name: "Level", value: `${u.level}`, inline: true },
-        { name: "XP", value: `${u.xp}/${xpNeeded(u.level)}`, inline: true },
-        { name: "Rolls", value: `${u.rolls}`, inline: true },
-        { name: "Luck", value: `x${luck.toFixed(2)}`, inline: true }
+        { name: "✨ Rarity", value: `🎲 ${r.name}\n(${r.display})` },
+        { name: "⭐ Level", value: `⭐ ${u.level}`, inline: true },
+        { name: "📊 XP Gained", value: `📈 +${xpGain}`, inline: true },
+        { name: "📈 XP", value: `${u.xp}/${xpNeeded(u.level)}`, inline: true },
+        { name: "🔁 Rolls", value: `🔁 ${u.rolls}`, inline: true },
+        { name: "🍀 Luck", value: `🍀 x${luck.toFixed(2)}`, inline: true }
       );
 
-    if (dice) embed.addFields({ name: "Dice Found", value: dice });
-    if (leveled) embed.addFields({ name: "Level Up", value: "Yes" });
+    if (dice) embed.addFields({ name: "🎁 Dice Found", value: `🎲 ${dice}` });
+    if (leveled) embed.addFields({ name: "⬆️ Level Up", value: "⬆️ Yes" });
 
     return msg.reply({ embeds: [embed] });
   }
@@ -230,8 +230,7 @@ client.on("messageCreate", async (msg) => {
   if (msg.content === "?rebirth") {
     const req = Math.floor(1000 * Math.pow(2.5, u.rebirths));
 
-    if (u.rolls < req)
-      return msg.reply(`Need ${req} rolls`);
+    if (u.rolls < req) return msg.reply(`Need ${req} rolls`);
 
     pendingRebirth[msg.author.id] = true;
     return msg.reply("Type ?rebirth confirm");
