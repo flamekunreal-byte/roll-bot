@@ -498,7 +498,7 @@ XP: ${u.xp}/${xpNeeded(u.level)}
   }
 });
 
-    // ================= LEADERBOARD =================
+    // ================= RAREST LEADERBOARD =================
     if (msg.content === "?leaderboard") {
 
       const entries = Object.entries(userData);
@@ -506,37 +506,50 @@ XP: ${u.xp}/${xpNeeded(u.level)}
       const getName = (id) =>
         msg.guild.members.cache.get(id)?.displayName || "Unknown";
 
+      const getRarestValue = (u) => {
+        if (!u.rarest) return 0;
+        return points[u.rarest] || 0;
+      };
+
       const getRarestCount = (u) => {
         if (!u.rarest) return 0;
         return u.owned?.[u.rarest] || 0;
       };
 
-      const tops = [...entries]
-        .sort((a, b) => b[1].rolls - a[1].rolls)
-        .slice(0, 5)
-        .map((x, i) =>
-          `${i + 1}. 🎲 ${getName(x[0])} — ${x[1].rolls.toLocaleString()}`
-        )
-        .join("\n");
+      const leaderboard = [...entries]
+        .sort((a, b) => {
+          const rareDiff =
+            getRarestValue(b[1]) - getRarestValue(a[1]);
+
+          if (rareDiff !== 0) return rareDiff;
+
+          return getRarestCount(b[1]) - getRarestCount(a[1]);
+        })
+        .slice(0, 10)
+        .map((x, i) => {
+          const u = x[1];
+
+          return (
+            `${i + 1}. 💎 ${getName(x[0])}\n` +
+            `Rarest: ${u.rarest || "None"}\n` +
+            `Count: ${getRarestCount(u)}`
+          );
+        })
+        .join("\n\n");
 
       return msg.reply({
         embeds: [
           new EmbedBuilder()
             .setColor(COLOR)
-            .setTitle("📊 Leaderboards")
-            .addFields({
-              name: "🎲 Total Rolls",
-              value: tops || "None"
+            .setTitle("💎 Rarest Roll Leaderboard")
+            .setDescription(leaderboard || "No data")
+            .setFooter({
+              text: "RNG Rarest Rankings"
             })
+            .setTimestamp()
         ]
       });
     }
-
-  } catch (err) {
-    console.error(err);
-    msg.reply("An error occurred.");
-  }
-});
 
 // ================= LOGIN =================
 client.login(process.env.TOKEN);
