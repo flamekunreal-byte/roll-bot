@@ -78,18 +78,6 @@ const points = {
   "Everything I": 5000, "Everything II": 7500, "Everything III": 10000
 };
 
-// ---------------- DICE ----------------
-function giveDice(user) {
-  const r = Math.random();
-
-  if (r < 1 / 10000) return user.inventory["Cosmic Lucky Dice"]++, "🌌 Cosmic Lucky Dice";
-  if (r < 1 / 2500) return user.inventory["Diamond Lucky Dice"]++, "💎 Diamond Lucky Dice";
-  if (r < 1 / 500) return user.inventory["Golden Lucky Dice"]++, "🥇 Golden Lucky Dice";
-  if (r < 1 / 50) return user.inventory["Lucky Dice"]++, "🎲 Lucky Dice";
-
-  return null;
-}
-
 // ---------------- ROLL ----------------
 function roll(luck) {
   const check = (c, n, d) =>
@@ -135,18 +123,29 @@ function roll(luck) {
   );
 }
 
+// ---------------- DICE ----------------
+function giveDice(user) {
+  const r = Math.random();
+
+  if (r < 1 / 10000) return user.inventory["Cosmic Lucky Dice"]++, "Cosmic Lucky Dice";
+  if (r < 1 / 2500) return user.inventory["Diamond Lucky Dice"]++, "Diamond Lucky Dice";
+  if (r < 1 / 500) return user.inventory["Golden Lucky Dice"]++, "Golden Lucky Dice";
+  if (r < 1 / 50) return user.inventory["Lucky Dice"]++, "Lucky Dice";
+
+  return null;
+}
+
 // ---------------- BOT ----------------
 client.on("messageCreate", async (msg) => {
   if (!msg.guild || msg.author.bot) return;
 
   const isAdmin = msg.member?.permissions?.has(PermissionFlagsBits.Administrator);
 
-  // channel lock (admins bypass)
   if (msg.channel.id !== CHANNEL_ID && !isAdmin) return;
 
   const u = getUser(msg.author.id);
 
-  // ================= ROLL =================
+  // ---------------- ROLL ----------------
   if (msg.content === "?roll") {
 
     const boost = activeBoost[msg.author.id] || 1;
@@ -166,254 +165,72 @@ client.on("messageCreate", async (msg) => {
       u.rarest = r.name;
     }
 
-    let leveled = false;
-
     while (u.xp >= xpNeeded(u.level)) {
       u.xp -= xpNeeded(u.level);
       u.level++;
-      leveled = true;
     }
 
     const dice = giveDice(u);
 
     saveData();
 
-    const embed = new EmbedBuilder()
-      .setColor(COLOR)
-      .setTitle("🎲 Roll Result")
-      .addFields(
-        { name: "✨ Rarity", value: `🎲 **${r.name}** ︱ ${r.display}` },
-        { name: "📊 Progress", value: `⭐ Level: **${u.level}** ︱ 📈 ${u.xp}/${xpNeeded(u.level)} ︱ ➕ +${xpGain} XP` },
-        { name: "🔁 Stats", value: `🔁 Rolls: **${u.rolls}** ︱ 🍀 Luck: **x${luck.toFixed(2)}**` }
-      );
-
-    if (dice)
-      embed.addFields({ name: "🎁 Drop", value: `🎲 You found: **${dice}**` });
-
-    if (leveled)
-      embed.addFields({ name: "⬆️ Level Up!", value: "⭐ You leveled up!" });
-
-    return msg.reply({ embeds: [embed] });
+    return msg.reply(`🎲 ${r.name} (${r.display}) | +${xpGain} XP | Level ${u.level} | Rolls ${u.rolls}` +
+      (dice ? ` | Found: ${dice}` : ""));
   }
 
-  // ================= ADMIN SYSTEM =================
-  if (msg.content.startsWith("?")) {
+  // ---------------- GIVE DICE FIXED ----------------
+  if (msg.content.startsWith("?give dice")) {
+    const args = msg.content.split(" ");
+    const user = msg.mentions.users.first();
+    const amount = parseInt(args[args.length - 1]);
+    const type = args.slice(3, args.length - 1).join(" ");
 
-    // only admin commands below
-    if (!isAdmin) {
-
-      // ---------- SET ROLLS ----------
-      if (msg.content.startsWith("?setrolls")) {
-        const user = msg.mentions.users.first();
-        const amount = parseInt(msg.content.split(" ")[2]);
-
-        if (!user || isNaN(amount)) return msg.reply("❌ ?setrolls @user <amount>");
-
-        getUser(user.id).rolls = amount;
-        saveData();
-        return msg.reply(`✅ Set rolls of ${user.username} to ${amount}`);
-      }
-
-      // ---------- SET LEVEL ----------
-      if (msg.content.startsWith("?setlevel")) {
-        const user = msg.mentions.users.first();
-        const amount = parseInt(msg.content.split(" ")[2]);
-
-        if (!user || isNaN(amount)) return msg.reply("❌ ?setlevel @user <amount>");
-
-        getUser(user.id).level = amount;
-        saveData();
-        return msg.reply(`✅ Set level of ${user.username} to ${amount}`);
-      }
-
-      // ---------- SET REBIRTH ----------
-      if (msg.content.startsWith("?setrebirth")) {
-        const user = msg.mentions.users.first();
-        const amount = parseInt(msg.content.split(" ")[2]);
-
-        if (!user || isNaN(amount)) return msg.reply("❌ ?setrebirth @user <amount>");
-
-        getUser(user.id).rebirths = amount;
-        saveData();
-        return msg.reply(`✅ Set rebirths of ${user.username} to ${amount}`);
-      }
-
-      // ---------- CHECK ----------
-      if (msg.content.startsWith("?check")) {
-        const user = msg.mentions.users.first() || msg.author;
-        const p = getUser(user.id);
-
-        return msg.reply({
-          embeds: [
-            new EmbedBuilder()
-              .setColor(COLOR)
-              .setTitle(`🔍 Check ${user.username}`)
-              .addFields(
-                { name: "⭐ Level", value: `${p.level}`, inline: true },
-                { name: "🔁 Rolls", value: `${p.rolls}`, inline: true },
-                { name: "🔁 Rebirths", value: `${p.rebirths}`, inline: true },
-                { name: "💎 Rarest", value: `${p.rarest || "None"}` }
-              )
-          ]
-        });
-      }
-
-      // ---------- RESET ----------
-      if (msg.content.startsWith("?reset")) {
-        const user = msg.mentions.users.first();
-        if (!user) return msg.reply("❌ ?reset @user");
-
-        userData[user.id] = {
-          xp: 0,
-          level: 1,
-          rolls: 0,
-          rebirths: 0,
-          owned: {},
-          rarest: null,
-          inventory: {
-            "Lucky Dice": 0,
-            "Golden Lucky Dice": 0,
-            "Diamond Lucky Dice": 0,
-            "Cosmic Lucky Dice": 0
-          }
-        };
-
-        saveData();
-        return msg.reply(`🧨 Reset ${user.username}`);
-      }
-
-      // ---------- GIVE DICE ----------
-      if (msg.content.startsWith("?give dice")) {
-        const args = msg.content.split(" ");
-        const user = msg.mentions.users.first();
-        const type = args[3];
-        const amount = parseInt(args[4]);
-
-        if (!user || !type || isNaN(amount)) {
-          return msg.reply("❌ ?give dice @user <type> <amount>");
-        }
-
-        const inv = getUser(user.id).inventory;
-        if (!inv[type]) return msg.reply("❌ Invalid dice");
-
-        inv[type] += amount;
-        saveData();
-        return msg.reply(`🎁 Gave ${amount} ${type}`);
-      }
-
-      // ---------- REMOVE DICE ----------
-      if (msg.content.startsWith("?remove dice")) {
-        const args = msg.content.split(" ");
-        const user = msg.mentions.users.first();
-        const type = args[3];
-        const amount = parseInt(args[4]);
-
-        if (!user || !type || isNaN(amount)) {
-          return msg.reply("❌ ?remove dice @user <type> <amount>");
-        }
-
-        const inv = getUser(user.id).inventory;
-        if (!inv[type]) return msg.reply("❌ Invalid dice");
-
-        inv[type] = Math.max(0, inv[type] - amount);
-        saveData();
-        return msg.reply(`🗑️ Removed ${amount} ${type}`);
-      }
+    if (!user || !type || isNaN(amount)) {
+      return msg.reply("Usage: ?give dice @user <dice name> <amount>");
     }
 
-    // ---------- ADMIN ONLY ROLLS ----------
-    if (msg.content.startsWith("?rolls")) {
+    const inv = getUser(user.id).inventory;
+    if (inv[type] === undefined) return msg.reply("Invalid dice type");
 
-      if (!isAdmin) return msg.reply("❌ No permission.");
-
-      const args = msg.content.split(" ");
-      const action = args[1];
-      const amount = parseInt(args[2]);
-
-      if (!action || isNaN(amount)) {
-        return msg.reply("❌ ?rolls add/remove <amount>");
-      }
-
-      if (action === "add") {
-        u.rolls += amount;
-        saveData();
-        return msg.reply(`✅ Added ${amount} rolls`);
-      }
-
-      if (action === "remove") {
-        u.rolls = Math.max(0, u.rolls - amount);
-        saveData();
-        return msg.reply(`✅ Removed ${amount} rolls`);
-      }
-    }
-  }
-
-  // ================= REBIRTH =================
-  if (msg.content === "?rebirth") {
-    const req = Math.floor(1000 * Math.pow(2.5, u.rebirths));
-
-    if (u.rolls < req) return msg.reply(`Need ${req} rolls`);
-
-    pendingRebirth[msg.author.id] = true;
-    return msg.reply("Type ?rebirth confirm");
-  }
-
-  if (msg.content === "?rebirth confirm") {
-    if (!pendingRebirth[msg.author.id]) return;
-
-    u.rebirths++;
-    u.level = 1;
-    u.xp = 0;
-    u.rolls = 0;
-
-    pendingRebirth[msg.author.id] = false;
+    inv[type] += amount;
     saveData();
 
-    return msg.reply("Rebirth complete");
+    return msg.reply(`Gave ${amount} ${type} to ${user.username}`);
   }
 
-  // ================= LEADERBOARD =================
-  if (msg.content === "?leaderboard") {
+  // ---------------- REMOVE DICE FIXED ----------------
+  if (msg.content.startsWith("?remove dice")) {
+    const args = msg.content.split(" ");
+    const user = msg.mentions.users.first();
+    const amount = parseInt(args[args.length - 1]);
+    const type = args.slice(3, args.length - 1).join(" ");
 
-    const getName = id =>
-      msg.guild.members.cache.get(id)?.displayName || "Unknown";
+    if (!user || !type || isNaN(amount)) {
+      return msg.reply("Usage: ?remove dice @user <dice name> <amount>");
+    }
 
-    const entries = Object.entries(userData);
+    const inv = getUser(user.id).inventory;
+    if (inv[type] === undefined) return msg.reply("Invalid dice type");
 
-    const topRolls = entries
-      .sort((a,b)=>b[1].rolls-a[1].rolls)
-      .slice(0,5)
-      .map((x,i)=>`${i+1}. ${getName(x[0])} - ${x[1].rolls}`)
-      .join("\n");
+    inv[type] = Math.max(0, inv[type] - amount);
+    saveData();
 
-    const topLevels = entries
-      .sort((a,b)=>b[1].level-a[1].level)
-      .slice(0,5)
-      .map((x,i)=>`${i+1}. ${getName(x[0])} - ${x[1].level}`)
-      .join("\n");
+    return msg.reply(`Removed ${amount} ${type} from ${user.username}`);
+  }
 
-    const topRare = entries
-      .map(x=>{
-        const r = x[1].rarest || "None";
-        return { id:x[0], rare:r, count:x[1].owned?.[r] || 0 };
-      })
-      .sort((a,b)=>b.count-a.count)
-      .slice(0,5)
-      .map((x,i)=>`${i+1}. ${getName(x.id)} - ${x.rare} (${x.count})`)
-      .join("\n");
+  // ---------------- ADMIN ROLLS ----------------
+  if (msg.content.startsWith("?rolls")) {
+    if (!isAdmin) return msg.reply("No permission");
 
-    return msg.reply({
-      embeds: [
-        new EmbedBuilder()
-          .setColor(COLOR)
-          .setTitle("📊 Leaderboards")
-          .addFields(
-            { name: "🔁 Rolls", value: topRolls || "None" },
-            { name: "⭐ Levels", value: topLevels || "None" },
-            { name: "💎 Rarest", value: topRare || "None" }
-          )
-      ]
-    });
+    const args = msg.content.split(" ");
+    const action = args[1];
+    const amount = parseInt(args[2]);
+
+    if (action === "add") u.rolls += amount;
+    if (action === "remove") u.rolls = Math.max(0, u.rolls - amount);
+
+    saveData();
+    return msg.reply("Done");
   }
 });
 
