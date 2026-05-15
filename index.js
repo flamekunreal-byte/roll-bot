@@ -416,77 +416,69 @@ Rebirth 3+: AutoRoll speed -1s per rebirth (min 5s max reduction 5s)`
   }
 
   // ================= LEADERBOARD =================
-if (msg.content === "?leaderboard") {
+  if (msg.content === "?leaderboard") {
 
-  const entries = Object.entries(userData);
+    const entries = Object.entries(userData);
 
-  const getName = (id) =>
-    msg.guild.members.cache.get(id)?.displayName || "Unknown";
+    const getName = (id) =>
+      msg.guild.members.cache.get(id)?.displayName || "Unknown";
 
-  // helper: count of rarest roll
-  const getRarestCount = (u) => {
-    if (!u.rarest) return 0;
-    return u.owned?.[u.rarest] || 0;
-  };
+    const getRarestCount = (u) => {
+      if (!u.rarest) return 0;
+      return u.owned?.[u.rarest] || 0;
+    };
 
-  // TOP TOTAL ROLLS
-  const topRolls = [...entries]
-    .sort((a, b) => b[1].rolls - a[1].rolls)
-    .slice(0, 5)
-    .map((x, i) =>
-      `${i + 1}. 🎲 ${getName(x[0])} — ${x[1].rolls.toLocaleString()}`
-    )
-    .join("\n");
+    const topRolls = [...entries]
+      .sort((a, b) => b[1].rolls - a[1].rolls)
+      .slice(0, 5)
+      .map((x, i) =>
+        `${i + 1}. 🎲 ${getName(x[0])} — ${x[1].rolls.toLocaleString()}`
+      )
+      .join("\n");
 
-  // TOP LEVEL
-  const topLevel = [...entries]
-    .sort((a, b) => b[1].level - a[1].level)
-    .slice(0, 5)
-    .map((x, i) =>
-      `${i + 1}. ⭐ ${getName(x[0])} — Level ${x[1].level}`
-    )
-    .join("\n");
+    const topLevel = [...entries]
+      .sort((a, b) => b[1].level - a[1].level)
+      .slice(0, 5)
+      .map((x, i) =>
+        `${i + 1}. ⭐ ${getName(x[0])} — Level ${x[1].level}`
+      )
+      .join("\n");
 
-  // TOP REBIRTHS
-  const topRebirths = [...entries]
-    .sort((a, b) => b[1].rebirths - a[1].rebirths)
-    .slice(0, 5)
-    .map((x, i) =>
-      `${i + 1}. 🔄 ${getName(x[0])} — ${x[1].rebirths}`
-    )
-    .join("\n");
+    const topRebirths = [...entries]
+      .sort((a, b) => b[1].rebirths - a[1].rebirths)
+      .slice(0, 5)
+      .map((x, i) =>
+        `${i + 1}. 🔄 ${getName(x[0])} — ${x[1].rebirths}`
+      )
+      .join("\n");
 
-  // RAREST + COUNT
-  const topRarest = [...entries]
-    .sort((a, b) => {
-      const br = getRarestCount(b[1]);
-      const ar = getRarestCount(a[1]);
-      return br - ar;
-    })
-    .slice(0, 5)
-    .map((x, i) => {
-      const u = x[1];
-      const rare = u.rarest || "None";
-      const count = getRarestCount(u);
-      return `${i + 1}. 💎 ${getName(x[0])} — ${rare} (${count})`;
-    })
-    .join("\n");
+    const topRarest = [...entries]
+      .sort((a, b) => getRarestCount(b[1]) - getRarestCount(a[1]))
+      .slice(0, 5)
+      .map((x, i) => {
+        const u = x[1];
+        const rare = u.rarest || "None";
+        const count = getRarestCount(u);
+        return `${i + 1}. 💎 ${getName(x[0])} — ${rare} (${count})`;
+      })
+      .join("\n");
 
-  return msg.reply({
-    embeds: [
-      new EmbedBuilder()
-        .setColor(COLOR)
-        .setTitle("📊 Leaderboards")
-        .addFields(
-          { name: "🎲 Total Rolls", value: topRolls || "None" },
-          { name: "⭐ Levels", value: topLevel || "None" },
-          { name: "🔄 Rebirths", value: topRebirths || "None" },
-          { name: "💎 Rarest Rolls", value: topRarest || "None" }
-        )
-        .setFooter({ text: "RNG Leaderboard System" })
-    ]
+    return msg.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(COLOR)
+          .setTitle("📊 Leaderboards")
+          .addFields(
+            { name: "🎲 Total Rolls", value: topRolls || "None" },
+            { name: "⭐ Levels", value: topLevel || "None" },
+            { name: "🔄 Rebirths", value: topRebirths || "None" },
+            { name: "💎 Rarest Rolls", value: topRarest || "None" }
+          )
+          .setFooter({ text: "RNG Leaderboard System" })
+      ]
+    });
   }
-});
 
-// ================= LOGIN =================
+}); // ⬅️ THIS CLOSES messageCreate EVENT (YOU WERE MISSING THIS)
+
 client.login(process.env.TOKEN);
