@@ -473,7 +473,7 @@ Rebirth 3+: AutoRoll speed -1s per rebirth (min 5s max reduction 5s)`
       return u.owned?.[u.rarest] || 0;
     };
 
-    const topRolls = [...entries]
+    const tops = [...entries]
       .sort((a, b) => b[1].rolls - a[1].rolls)
       .slice(0, 5)
       .map((x, i) =>
@@ -508,21 +508,21 @@ Rebirth 3+: AutoRoll speed -1s per rebirth (min 5s max reduction 5s)`
       })
       .join("\n");
 
-    return msg.reply({
-      embeds: [
-        new EmbedBuilder()
-          .setColor(COLOR)
-          .setTitle("📊 Leaderboards")
-          .addFields(
-            { name: "🎲 Total Rolls", value: topRolls || "None" },
-            { name: "⭐ Levels", value: topLevel || "None" },
-            { name: "🔄 Rebirths", value: topRebirths || "None" },
-            { name: "💎 Rarest Rolls", value: topRarest || "None" }
-          )
-          .setFooter({ text: "RNG Leaderboard System" })
-      ]
-    });
-  }
+return msg.reply({
+  embeds: [
+    new EmbedBuilder()
+      .setColor(COLOR)
+      .setTitle("📊 Leaderboards")
+      .addFields(
+        { name: "🎲 Total Rolls", value: topRolls || "None" },
+        { name: "⭐ Levels", value: topLevel || "None" },
+        { name: "🔄 Rebirths", value: topRebirths || "None" },
+        { name: "💎 Rarest Rolls", value: topRarest || "None" }
+      )
+      .setFooter({ text: "RNG Leaderboard System" })
+  ]
+});
+
 
 }); // ⬅️ THIS CLOSES messageCreate EVENT (YOU WERE MISSING THIS)
 
