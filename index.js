@@ -19,8 +19,8 @@ const client = new Client({
 
 // ================= MEMORY =================
 let userData = {};
-let pendingRebirth = {};
 let activeBoost = {};
+let pendingRebirth = {};
 
 // ================= SAVE =================
 function loadData() {
@@ -32,7 +32,6 @@ function loadData() {
     userData = JSON.parse(
       fs.readFileSync(DATA_FILE, "utf8") || "{}"
     );
-
   } catch {
     userData = {};
   }
@@ -224,7 +223,6 @@ function roll(luck) {
 
 // ================= EMBEDS =================
 function createEmbed(title) {
-
   return new EmbedBuilder()
     .setColor(EMBED_COLOR)
     .setTitle(title);
@@ -269,7 +267,6 @@ async function handleRoll(message, user) {
   while (
     user.xp >= xpNeeded(user.level)
   ) {
-
     user.xp -= xpNeeded(user.level);
     user.level++;
     leveled = true;
@@ -279,36 +276,34 @@ async function handleRoll(message, user) {
 
   saveData();
 
-  const embed = createEmbed(
-    "🎲 Roll Result"
-  );
-
-  embed.addFields(
-    {
-      name: "Rarity",
-      value: `${rarity} [${result.display}]`
-    },
-    {
-      name: "⭐ Level",
-      value: `${user.level}`,
-      inline: true
-    },
-    {
-      name: "📊 XP",
-      value: `${user.xp}/${xpNeeded(user.level)} (+${xpGain})`,
-      inline: true
-    },
-    {
-      name: "🍀 Luck",
-      value: `x${luck.toFixed(2)}`,
-      inline: true
-    },
-    {
-      name: "🔁 Rolls",
-      value: `${user.rolls}`,
-      inline: true
-    }
-  );
+  const embed =
+    createEmbed("🎲 Roll Result")
+      .addFields(
+        {
+          name: "Rarity",
+          value: `${rarity} [${result.display}]`
+        },
+        {
+          name: "⭐ Level",
+          value: `${user.level}`,
+          inline: true
+        },
+        {
+          name: "📊 XP",
+          value: `${user.xp}/${xpNeeded(user.level)} (+${xpGain})`,
+          inline: true
+        },
+        {
+          name: "🔁 Rolls",
+          value: `${user.rolls}`,
+          inline: true
+        },
+        {
+          name: "🍀 Luck",
+          value: `x${luck.toFixed(2)}`,
+          inline: true
+        }
+      );
 
   if (dice) {
     embed.addFields({
@@ -333,36 +328,33 @@ async function handleInventory(message, user) {
 
   const inv = user.inventory;
 
-  const embed = createEmbed(
-    "🎒 Inventory"
-  );
-
-  embed.setDescription(
-    "Use dice with the commands below."
-  );
-
-  embed.addFields(
-    {
-      name: "🎲 Lucky Dice",
-      value: `${inv["Lucky Dice"]}x\n\`?use lucky dice\``,
-      inline: true
-    },
-    {
-      name: "🥇 Golden Lucky Dice",
-      value: `${inv["Golden Lucky Dice"]}x\n\`?use golden lucky dice\``,
-      inline: true
-    },
-    {
-      name: "💎 Diamond Lucky Dice",
-      value: `${inv["Diamond Lucky Dice"]}x\n\`?use diamond lucky dice\``,
-      inline: true
-    },
-    {
-      name: "🌌 Cosmic Lucky Dice",
-      value: `${inv["Cosmic Lucky Dice"]}x\n\`?use cosmic lucky dice\``,
-      inline: true
-    }
-  );
+  const embed =
+    createEmbed("🎒 Inventory")
+      .setDescription(
+        "Use dice with these commands."
+      )
+      .addFields(
+        {
+          name: "🎲 Lucky Dice",
+          value: `${inv["Lucky Dice"]}x\n\`?use lucky dice\``,
+          inline: true
+        },
+        {
+          name: "🥇 Golden Lucky Dice",
+          value: `${inv["Golden Lucky Dice"]}x\n\`?use golden lucky dice\``,
+          inline: true
+        },
+        {
+          name: "💎 Diamond Lucky Dice",
+          value: `${inv["Diamond Lucky Dice"]}x\n\`?use diamond lucky dice\``,
+          inline: true
+        },
+        {
+          name: "🌌 Cosmic Lucky Dice",
+          value: `${inv["Cosmic Lucky Dice"]}x\n\`?use cosmic lucky dice\``,
+          inline: true
+        }
+      );
 
   return message.reply({
     embeds: [embed]
@@ -389,7 +381,7 @@ async function handleUse(message, user) {
     );
   }
 
-  const invKey =
+  const inventoryName =
     key
       .split(" ")
       .map(
@@ -400,14 +392,14 @@ async function handleUse(message, user) {
       .join(" ");
 
   if (
-    user.inventory[invKey] <= 0
+    user.inventory[inventoryName] <= 0
   ) {
     return message.reply(
       "❌ You don't have this dice."
     );
   }
 
-  user.inventory[invKey]--;
+  user.inventory[inventoryName]--;
 
   activeBoost[
     message.author.id
@@ -416,8 +408,87 @@ async function handleUse(message, user) {
   saveData();
 
   return message.reply(
-    `⚡ Used ${invKey} → next roll x${boosts[key]}`
+    `⚡ Used ${inventoryName} → next roll x${boosts[key]}`
   );
+}
+
+async function handleProfile(message) {
+
+  const args =
+    message.content
+      .split(" ")
+      .slice(1);
+
+  let target;
+
+  if (message.mentions.users.first()) {
+
+    target =
+      message.mentions.users.first();
+
+  } else if (args.length) {
+
+    const search =
+      args.join(" ")
+        .toLowerCase();
+
+    target =
+      message.guild.members.cache.find(
+        m =>
+          m.user.username
+            .toLowerCase()
+            .includes(search) ||
+
+          m.displayName
+            .toLowerCase()
+            .includes(search)
+      )?.user;
+  }
+
+  if (!target) {
+    target = message.author;
+  }
+
+  const user =
+    getUser(target.id);
+
+  const rarest =
+    user.rarest || "None";
+
+  const rareCount =
+    user.owned?.[rarest] || 0;
+
+  const embed =
+    createEmbed("👤 Profile")
+      .addFields(
+        {
+          name: "User",
+          value: target.username
+        },
+        {
+          name: "⭐ Level",
+          value: `${user.level}`,
+          inline: true
+        },
+        {
+          name: "🔁 Rolls",
+          value: `${user.rolls}`,
+          inline: true
+        },
+        {
+          name: "🔥 Rebirths",
+          value: `${user.rebirths}`,
+          inline: true
+        },
+        {
+          name: "💎 Rarest Roll",
+          value: `${rarest} (${rareCount}x)`
+        }
+      );
+
+  return message.reply({
+    embeds: [embed]
+  });
 }
 
 async function handleLeaderboard(message) {
@@ -426,33 +497,28 @@ async function handleLeaderboard(message) {
     Object.entries(userData);
 
   const getName = id =>
-    message.guild
-      .members.cache.get(id)
+    message.guild.members.cache.get(id)
       ?.displayName || "Unknown";
 
   const topRolls =
     [...entries]
-      .sort(
-        (a,b) =>
-          b[1].rolls - a[1].rolls
+      .sort((a,b)=>
+        b[1].rolls - a[1].rolls
       )
       .slice(0,5)
-      .map(
-        (x,i) =>
-          `${i+1}. ${getName(x[0])} — ${x[1].rolls}`
+      .map((x,i)=>
+        `${i+1}. ${getName(x[0])} — ${x[1].rolls}`
       )
       .join("\n");
 
   const topLevels =
     [...entries]
-      .sort(
-        (a,b) =>
-          b[1].level - a[1].level
+      .sort((a,b)=>
+        b[1].level - a[1].level
       )
       .slice(0,5)
-      .map(
-        (x,i) =>
-          `${i+1}. ${getName(x[0])} — ${x[1].level}`
+      .map((x,i)=>
+        `${i+1}. ${getName(x[0])} — ${x[1].level}`
       )
       .join("\n");
 
@@ -467,38 +533,34 @@ async function handleLeaderboard(message) {
           id: x[0],
           rare,
           count:
-            x[1].owned[rare] || 0
+            x[1].owned?.[rare] || 0
         };
       })
-      .sort(
-        (a,b) =>
-          b.count - a.count
+      .sort((a,b)=>
+        b.count - a.count
       )
       .slice(0,5)
-      .map(
-        (x,i) =>
-          `${i+1}. ${getName(x.id)} — ${x.rare} (${x.count}x)`
+      .map((x,i)=>
+        `${i+1}. ${getName(x.id)} — ${x.rare} (${x.count}x)`
       )
       .join("\n");
 
-  const embed = createEmbed(
-    "📊 Leaderboards"
-  );
-
-  embed.addFields(
-    {
-      name: "💎 Rarest Rolls",
-      value: topRarest || "None"
-    },
-    {
-      name: "🔁 Rolls",
-      value: topRolls || "None"
-    },
-    {
-      name: "⭐ Levels",
-      value: topLevels || "None"
-    }
-  );
+  const embed =
+    createEmbed("📊 Leaderboards")
+      .addFields(
+        {
+          name: "💎 Rarest Rolls",
+          value: topRarest || "None"
+        },
+        {
+          name: "🔁 Rolls",
+          value: topRolls || "None"
+        },
+        {
+          name: "⭐ Levels",
+          value: topLevels || "None"
+        }
+      );
 
   return message.reply({
     embeds: [embed]
@@ -524,43 +586,26 @@ client.on(
         message.author.id
       );
 
-    if (
-      message.content === "?roll"
-    ) {
-      return handleRoll(
-        message,
-        user
-      );
+    if (message.content === "?roll") {
+      return handleRoll(message, user);
     }
 
-    if (
-      message.content === "?inv"
-    ) {
-      return handleInventory(
-        message,
-        user
-      );
+    if (message.content === "?inv") {
+      return handleInventory(message, user);
     }
 
-    if (
-      message.content.startsWith("?use")
-    ) {
-      return handleUse(
-        message,
-        user
-      );
+    if (message.content.startsWith("?use")) {
+      return handleUse(message, user);
     }
 
-    if (
-      message.content === "?leaderboard"
-    ) {
-      return handleLeaderboard(
-        message
-      );
+    if (message.content.startsWith("?profile")) {
+      return handleProfile(message);
+    }
+
+    if (message.content === "?leaderboard") {
+      return handleLeaderboard(message);
     }
   }
 );
 
-client.login(
-  process.env.TOKEN
-);
+client.login(process.env.TOKEN);
