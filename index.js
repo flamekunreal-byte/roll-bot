@@ -94,15 +94,15 @@ client.on("ready", () => {
 
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
-
   if (message.channel.id !== process.env.CHANNEL_ID) return;
+  if (message.content !== "?roll") return;
 
-  if (message.content === "?roll") {
-    const result = roll();
-const rarity = result.split(" (")[0];
+  const result = roll();
+  const rarity = result.split(" (")[0];
 
-    const member = message.member;
+  const member = message.member;
 
+  try {
     // remove old rarity roles
     for (const roleId of Object.values(roles)) {
       if (member.roles.cache.has(roleId)) {
@@ -110,13 +110,20 @@ const rarity = result.split(" (")[0];
       }
     }
 
-    // add new role
-  const newRole = roles[rarity];
-    if (newRole) {
-      await member.roles.add(newRole);
+    // add new rarity role
+    const roleId = roles[rarity];
+
+    if (roleId) {
+      await member.roles.add(roleId);
     }
 
-    message.reply(`🎲 You got: **${result}**`);
+    await message.reply(
+      `🎲 You got: **${result}**\n🏆 Role: **${rarity}**`
+    );
+
+  } catch (error) {
+    console.error(error);
+    await message.reply("Couldn't give role.");
   }
 });
 
