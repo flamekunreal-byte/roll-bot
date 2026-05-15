@@ -193,12 +193,76 @@ function startAutoroll(id){
 }
 // ================= BOT =================
 client.on("messageCreate", async (msg) => {
-  if(!msg.guild || msg.author.bot) return;
+  try {
+    if (!msg.guild || msg.author.bot) return;
 
-  const u = getUser(msg.author.id);
-  const isAdmin = msg.member?.permissions?.has(PermissionFlagsBits.Administrator);
+    const id = msg.author.id;
+    const u = getUser(id); // ✅ DECLARED ONCE ONLY HERE
 
-  lastSeen[msg.author.id] = Date.now();
+    const content = msg.content.trim();
+
+    // =========================
+    // HELP COMMAND
+    // =========================
+    if (content === "?help") {
+      return msg.reply(
+        "Commands:\n" +
+        "?roll - roll items\n" +
+        "?stats - show stats\n" +
+        "?rebirth - rebirth system"
+      );
+    }
+
+    // =========================
+    // ROLL COMMAND
+    // =========================
+    if (content === "?roll") {
+      const luck = getLuck(u.level, u.rebirths);
+      const result = roll(luck);
+
+      u.rolls++;
+      u.xp += points[result.name] || 1;
+      u.owned[result.name] = (u.owned[result.name] || 0) + 1;
+
+      saveData();
+
+      return msg.reply(`You rolled: **${result.name}**`);
+    }
+
+    // =========================
+    // STATS COMMAND
+    // =========================
+    if (content === "?stats") {
+      return msg.reply(
+        `Level: ${u.level}\n` +
+        `XP: ${u.xp}\n` +
+        `Rebirths: ${u.rebirths}\n` +
+        `Rolls: ${u.rolls}`
+      );
+    }
+
+    // =========================
+    // REBIRTH COMMAND
+    // =========================
+    if (content === "?rebirth") {
+      if (u.level < 10) {
+        return msg.reply("You need level 10 to rebirth.");
+      }
+
+      u.rebirths++;
+      u.level = 1;
+      u.xp = 0;
+
+      saveData();
+
+      return msg.reply("Rebirth complete!");
+    }
+
+  } catch (err) {
+    console.error(err);
+    msg.reply("An error occurred.");
+  }
+});
 
   // AUTOROLL SUMMARY
 const now = Date.now();
