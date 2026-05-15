@@ -1,4 +1,5 @@
 const { Client, GatewayIntentBits } = require("discord.js");
+const fs = require("fs");
 
 const client = new Client({
   intents: [
@@ -8,6 +9,17 @@ const client = new Client({
     GatewayIntentBits.MessageContent
   ]
 });
+
+const DATA_FILE = "./data.json";
+
+let userData = {};
+if (fs.existsSync(DATA_FILE)) {
+  userData = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+}
+
+function saveData() {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(userData, null, 2));
+}
 
 const roles = {
   "Part I": "1504750381539004477",
@@ -50,42 +62,42 @@ const roles = {
 function roll() {
   const rand = Math.random();
 
-  if (rand < 1/100000000) return "Everything III (1/100,000,000)";
-  if (rand < 1/10000000) return "Everything II (1/10,000,000)";
-  if (rand < 1/5000000) return "Everything I (1/5,000,000)";
+  if (rand < 1/100000000) return "Everything III";
+  if (rand < 1/10000000) return "Everything II";
+  if (rand < 1/5000000) return "Everything I";
 
-  if (rand < 1/2000000) return "Deep Research III (1/2,000,000)";
-  if (rand < 1/1000000) return "Deep Research II (1/1,000,000)";
-  if (rand < 1/750000) return "Deep Research I (1/750,000)";
+  if (rand < 1/2000000) return "Deep Research III";
+  if (rand < 1/1000000) return "Deep Research II";
+  if (rand < 1/750000) return "Deep Research I";
 
-  if (rand < 1/500000) return "Automation III (1/500,000)";
-  if (rand < 1/250000) return "Automation II (1/250,000)";
-  if (rand < 1/150000) return "Automation I (1/150,000)";
+  if (rand < 1/500000) return "Automation III";
+  if (rand < 1/250000) return "Automation II";
+  if (rand < 1/150000) return "Automation I";
 
-  if (rand < 1/100000) return "Tier III (1/100,000)";
-  if (rand < 1/75000) return "Tier II (1/75,000)";
-  if (rand < 1/50000) return "Tier I (1/50,000)";
+  if (rand < 1/100000) return "Tier III";
+  if (rand < 1/75000) return "Tier II";
+  if (rand < 1/50000) return "Tier I";
 
-  if (rand < 1/30000) return "Dark Part III (1/30,000)";
-  if (rand < 1/15000) return "Dark Part II (1/15,000)";
-  if (rand < 1/7000) return "Dark Part I (1/7,000)";
+  if (rand < 1/30000) return "Dark Part III";
+  if (rand < 1/15000) return "Dark Part II";
+  if (rand < 1/7000) return "Dark Part I";
 
-  if (rand < 1/4000) return "Rainbow Part III (1/4,000)";
-  if (rand < 1/2000) return "Rainbow Part II (1/2,000)";
-  if (rand < 1/1000) return "Rainbow Part I (1/1,000)";
+  if (rand < 1/4000) return "Rainbow Part III";
+  if (rand < 1/2000) return "Rainbow Part II";
+  if (rand < 1/1000) return "Rainbow Part I";
 
-  if (rand < 1/600) return "Gold Part III (1/600)";
-  if (rand < 1/300) return "Gold Part II (1/300)";
-  if (rand < 1/150) return "Gold Part I (1/150)";
+  if (rand < 1/600) return "Gold Part III";
+  if (rand < 1/300) return "Gold Part II";
+  if (rand < 1/150) return "Gold Part I";
 
-  if (rand < 1/75) return "Reset III (1/75)";
-  if (rand < 1/40) return "Reset II (1/40)";
-  if (rand < 1/20) return "Reset I (1/20)";
+  if (rand < 1/75) return "Reset III";
+  if (rand < 1/40) return "Reset II";
+  if (rand < 1/20) return "Reset I";
 
-  if (rand < 1/10) return "Part III (1/10)";
-  if (rand < 1/6) return "Part II (1/6)";
+  if (rand < 1/10) return "Part III";
+  if (rand < 1/6) return "Part II";
 
-  return "Part I (1/3)";
+  return "Part I";
 }
 
 client.on("ready", () => {
@@ -98,33 +110,30 @@ client.on("messageCreate", async (message) => {
   if (message.content !== "?roll") return;
 
   const result = roll();
-  const rarity = result.split(" (")[0];
-
   const member = message.member;
 
-  try {
-    // remove old rarity roles
-    for (const roleId of Object.values(roles)) {
-      if (member.roles.cache.has(roleId)) {
-        await member.roles.remove(roleId);
-      }
-    }
-
-    // add new rarity role
-    const roleId = roles[rarity];
-
-    if (roleId) {
-      await member.roles.add(roleId);
-    }
-
-    await message.reply(
-      `🎲 You got: **${result}**\n🏆 Role: **${rarity}**`
-    );
-
-  } catch (error) {
-    console.error(error);
-    await message.reply("Couldn't give role.");
+  if (!userData[member.id]) {
+    userData[member.id] = [];
   }
+
+  const alreadyOwned = userData[member.id].includes(result);
+
+  const roleId = roles[result];
+
+  // always give role
+  if (roleId && !member.roles.cache.has(roleId)) {
+    await member.roles.add(roleId);
+  }
+
+  // ONLY announce if it's new
+  if (!alreadyOwned) {
+    userData[member.id].push(result);
+    saveData();
+
+    return message.reply("🎉 You have been awarded with a new role");
+  }
+
+  // no message if already owned
 });
 
 client.login(process.env.TOKEN);
