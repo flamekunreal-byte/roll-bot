@@ -123,9 +123,15 @@ function giveDice(user) {
 
 // ================= ROLL =================
 function roll(luck) {
-  luck = Math.min(Math.max(luck, 1), 1e6);
-  
   const c = (p,n,d)=>Math.random()<p*luck?{name:n,display:d}:null;
+
+  return (
+    c(1e-8,"Everything III","1/100M")||
+    ...
+    c(1e-6,"Part II","1/6")||
+    {name:"Part I",display:"1/3"}
+  );
+}
 
   return (
     c(1e-8,"Everything III","1/100M")||
@@ -154,7 +160,7 @@ function roll(luck) {
     c(2e-5,"Reset I","1/20")||
     c(1e-5,"Part III","1/10")||
     c(1e-6,"Part II","1/6")||
-    return { name: "Part I", display: "1/3" };
+    c(1e-4,"Part I","1/3")
   );
 }
 
@@ -179,8 +185,28 @@ function getInterval(u){
 }
 
 function startAutoroll(id){
-if (autorollIntervals[id]) {
-  clearInterval(autorollIntervals[id]);
+  const u = getUser(id);
+
+  // 🔒 LOCK UNTIL REBIRTH 1
+  if (u.rebirths < 1) return;
+
+  // prevent duplicates
+  if (autorollIntervals[id]) return;
+
+  autorollIntervals[id] = setInterval(() => {
+    const u = getUser(id);
+    const luck = getLuck(u.level, u.rebirths);
+    const r = roll(luck);
+
+    u.rolls++;
+    u.xp += points[r.name] || 1;
+    u.owned[r.name] = (u.owned[r.name] || 0) + 1;
+
+    if (!autorollLogs[id]) autorollLogs[id] = [];
+    autorollLogs[id].push(r);
+
+    saveData();
+  }, getInterval(getUser(id)));
 }
 
   autorollIntervals[id] = setInterval(() => {
