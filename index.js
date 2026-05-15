@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
+const { Client, GatewayIntentBits, EmbedBuilder, PermissionFlagsBits } = require("discord.js");
 const fs = require("fs");
 
 const CHANNEL_ID = "1504547166088069181";
@@ -20,7 +20,7 @@ let userData = {};
 let pendingRebirth = {};
 let activeBoost = {};
 
-// ---------------- LOAD / SAVE ----------------
+// ---------------- SAVE / LOAD ----------------
 function loadData() {
   if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, "{}");
   userData = JSON.parse(fs.readFileSync(DATA_FILE, "utf8") || "{}");
@@ -31,6 +31,10 @@ function saveData() {
 }
 
 loadData();
+
+// auto-save safety
+process.on("exit", saveData);
+process.on("SIGINT", () => { saveData(); process.exit(); });
 
 // ---------------- USER ----------------
 function getUser(id) {
@@ -135,7 +139,11 @@ function roll(luck) {
 // ---------------- BOT ----------------
 client.on("messageCreate", async (msg) => {
   if (!msg.guild || msg.author.bot) return;
-  if (msg.channel.id !== CHANNEL_ID) return;
+
+  const isAdmin = msg.member?.permissions?.has(PermissionFlagsBits.Administrator);
+
+  // channel lock (admins bypass)
+  if (msg.channel.id !== CHANNEL_ID && !isAdmin) return;
 
   const u = getUser(msg.author.id);
 
@@ -175,33 +183,48 @@ client.on("messageCreate", async (msg) => {
       .setColor(COLOR)
       .setTitle("🎲 Roll Result")
       .addFields(
-        {
-          name: "✨ Rarity",
-          value: `🎲 **${r.name}** ︱ ${r.display}`
-        },
-        {
-          name: "📊 Progress",
-          value: `⭐ Level: **${u.level}** ︱ 📈 ${u.xp}/${xpNeeded(u.level)} ︱ ➕ +${xpGain} XP`
-        },
-        {
-          name: "⚡ Rolling Stats",
-          value: `🔁 Rolls: **${u.rolls}** ︱ 🍀 Luck: **x${luck.toFixed(2)}**`
-        }
+        { name: "✨ Rarity", value: `🎲 **${r.name}** ︱ ${r.display}` },
+        { name: "📊 Progress", value: `⭐ Level: **${u.level}** ︱ 📈 ${u.xp}/${xpNeeded(u.level)} ︱ ➕ +${xpGain} XP` },
+        { name: "⚡ Rolling Stats", value: `🔁 Rolls: **${u.rolls}** ︱ 🍀 Luck: **x${luck.toFixed(2)}**` }
       );
 
     if (dice)
-      embed.addFields({
-        name: "🎁 Drop",
-        value: `🎲 You found: **${dice}**`
-      });
+      embed.addFields({ name: "🎁 Drop", value: `🎲 You found: **${dice}**` });
 
     if (leveled)
-      embed.addFields({
-        name: "⬆️ Level Up!",
-        value: "⭐ You leveled up!"
-      });
+      embed.addFields({ name: "⬆️ Level Up!", value: "⭐ You leveled up!" });
 
     return msg.reply({ embeds: [embed] });
+  }
+
+  // ================= ADMIN ROLLS =================
+  if (msg.content.startsWith("?rolls")) {
+
+    if (!isAdmin) return msg.reply("❌ No permission.");
+
+    const args = msg.content.split(" ");
+    const action = args[1];
+    const amount = parseInt(args[2]);
+
+    if (!action || isNaN(amount)) {
+      return msg.reply("❌ Use: ?rolls add/remove <amount>");
+    }
+
+    if (amount <= 0) return msg.reply("❌ Invalid amount.");
+
+    if (action === "add") {
+      u.rolls += amount;
+      saveData();
+      return msg.reply(`✅ Added ${amount} rolls.`);
+    }
+
+    if (action === "remove") {
+      u.rolls = Math.max(0, u.rolls - amount);
+      saveData();
+      return msg.reply(`✅ Removed ${amount} rolls.`);
+    }
+
+    return msg.reply("❌ Invalid action.");
   }
 
   // ================= INVENTORY =================
@@ -240,37 +263,6 @@ client.on("messageCreate", async (msg) => {
           )
       ]
     });
-  }
-
-  // ================= ADMIN ROLLS =================
-  if (msg.content.startsWith("?rolls")) {
-    if (!msg.member.permissions.has("Administrator")) {
-      return msg.reply("❌ No permission.");
-    }
-
-    const args = msg.content.split(" ");
-    const action = args[1];
-    const amount = parseInt(args[2]);
-
-    if (!action || isNaN(amount)) {
-      return msg.reply("❌ Use: ?rolls add/remove <amount>");
-    }
-
-    if (amount <= 0) return msg.reply("❌ Invalid amount.");
-
-    if (action === "add") {
-      u.rolls += amount;
-      saveData();
-      return msg.reply(`✅ Added ${amount} rolls.`);
-    }
-
-    if (action === "remove") {
-      u.rolls = Math.max(0, u.rolls - amount);
-      saveData();
-      return msg.reply(`✅ Removed ${amount} rolls.`);
-    }
-
-    return msg.reply("❌ Invalid action.");
   }
 
   // ================= REBIRTH =================
