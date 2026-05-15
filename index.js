@@ -78,6 +78,18 @@ const points = {
   "Everything I": 5000, "Everything II": 7500, "Everything III": 10000
 };
 
+// ---------------- DICE ----------------
+function giveDice(user) {
+  const r = Math.random();
+
+  if (r < 1 / 10000) return user.inventory["Cosmic Lucky Dice"]++, "🌌 Cosmic Lucky Dice";
+  if (r < 1 / 2500) return user.inventory["Diamond Lucky Dice"]++, "💎 Diamond Lucky Dice";
+  if (r < 1 / 500) return user.inventory["Golden Lucky Dice"]++, "🥇 Golden Lucky Dice";
+  if (r < 1 / 50) return user.inventory["Lucky Dice"]++, "🎲 Lucky Dice";
+
+  return null;
+}
+
 // ---------------- ROLL ----------------
 function roll(luck) {
   const check = (c, n, d) =>
@@ -123,18 +135,6 @@ function roll(luck) {
   );
 }
 
-// ---------------- DICE ----------------
-function giveDice(user) {
-  const r = Math.random();
-
-  if (r < 1 / 10000) return user.inventory["Cosmic Lucky Dice"]++, "Cosmic Lucky Dice";
-  if (r < 1 / 2500) return user.inventory["Diamond Lucky Dice"]++, "Diamond Lucky Dice";
-  if (r < 1 / 500) return user.inventory["Golden Lucky Dice"]++, "Golden Lucky Dice";
-  if (r < 1 / 50) return user.inventory["Lucky Dice"]++, "Lucky Dice";
-
-  return null;
-}
-
 // ---------------- BOT ----------------
 client.on("messageCreate", async (msg) => {
   if (!msg.guild || msg.author.bot) return;
@@ -145,7 +145,7 @@ client.on("messageCreate", async (msg) => {
 
   const u = getUser(msg.author.id);
 
-  // ---------------- ROLL ----------------
+  // ================= ROLL =================
   if (msg.content === "?roll") {
 
     const boost = activeBoost[msg.author.id] || 1;
@@ -165,20 +165,33 @@ client.on("messageCreate", async (msg) => {
       u.rarest = r.name;
     }
 
+    let leveled = false;
+
     while (u.xp >= xpNeeded(u.level)) {
       u.xp -= xpNeeded(u.level);
       u.level++;
+      leveled = true;
     }
 
     const dice = giveDice(u);
 
     saveData();
 
-    return msg.reply(`🎲 ${r.name} (${r.display}) | +${xpGain} XP | Level ${u.level} | Rolls ${u.rolls}` +
-      (dice ? ` | Found: ${dice}` : ""));
+    return msg.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(COLOR)
+          .setTitle("🎲 Roll Result")
+          .addFields(
+            { name: "✨ Rarity", value: `🎲 **${r.name}** ︱ ${r.display}` },
+            { name: "📊 Progress", value: `⭐ Level: **${u.level}** ︱ 📈 ${u.xp}/${xpNeeded(u.level)} ︱ ➕ +${xpGain} XP` },
+            { name: "🔁 Stats", value: `🔁 Rolls: **${u.rolls}** ︱ 🍀 Luck: **x${luck.toFixed(2)}**` }
+          )
+      ]
+    });
   }
 
-  // ---------------- GIVE DICE FIXED ----------------
+  // ================= GIVE DICE FIXED =================
   if (msg.content.startsWith("?give dice")) {
     const args = msg.content.split(" ");
     const user = msg.mentions.users.first();
@@ -186,19 +199,20 @@ client.on("messageCreate", async (msg) => {
     const type = args.slice(3, args.length - 1).join(" ");
 
     if (!user || !type || isNaN(amount)) {
-      return msg.reply("Usage: ?give dice @user <dice name> <amount>");
+      return msg.reply("❌ ?give dice @user <type> <amount>");
     }
 
     const inv = getUser(user.id).inventory;
-    if (inv[type] === undefined) return msg.reply("Invalid dice type");
+
+    if (inv[type] === undefined) return msg.reply("❌ Invalid dice");
 
     inv[type] += amount;
     saveData();
 
-    return msg.reply(`Gave ${amount} ${type} to ${user.username}`);
+    return msg.reply(`🎁 Gave ${amount} ${type}`);
   }
 
-  // ---------------- REMOVE DICE FIXED ----------------
+  // ================= REMOVE DICE FIXED =================
   if (msg.content.startsWith("?remove dice")) {
     const args = msg.content.split(" ");
     const user = msg.mentions.users.first();
@@ -206,31 +220,36 @@ client.on("messageCreate", async (msg) => {
     const type = args.slice(3, args.length - 1).join(" ");
 
     if (!user || !type || isNaN(amount)) {
-      return msg.reply("Usage: ?remove dice @user <dice name> <amount>");
+      return msg.reply("❌ ?remove dice @user <type> <amount>");
     }
 
     const inv = getUser(user.id).inventory;
-    if (inv[type] === undefined) return msg.reply("Invalid dice type");
+
+    if (inv[type] === undefined) return msg.reply("❌ Invalid dice");
 
     inv[type] = Math.max(0, inv[type] - amount);
     saveData();
 
-    return msg.reply(`Removed ${amount} ${type} from ${user.username}`);
+    return msg.reply(`🗑️ Removed ${amount} ${type}`);
   }
 
-  // ---------------- ADMIN ROLLS ----------------
+  // ================= ADMIN ROLLS =================
   if (msg.content.startsWith("?rolls")) {
-    if (!isAdmin) return msg.reply("No permission");
+    if (!isAdmin) return msg.reply("❌ No permission.");
 
     const args = msg.content.split(" ");
     const action = args[1];
     const amount = parseInt(args[2]);
 
+    if (!action || isNaN(amount)) {
+      return msg.reply("❌ ?rolls add/remove <amount>");
+    }
+
     if (action === "add") u.rolls += amount;
     if (action === "remove") u.rolls = Math.max(0, u.rolls - amount);
 
     saveData();
-    return msg.reply("Done");
+    return msg.reply("✅ Done");
   }
 });
 
