@@ -285,89 +285,94 @@ function startAutoroll(id) {
       levels: levelUps
     });
 
-    saveData();
+saveData();
 
-  }, speed);
-}
-// ================= AUTOROLL SUMMARY =================
-const now = Date.now();
+    // ================= SUMMARY =================
+    const now = Date.now();
 
-if (!lastSeen[id]) {
-  lastSeen[id] = now;
-}
-
-// show summary after 1 minute inactivity
-if (
-  autorollLogs[id]?.length &&
-  now - lastSeen[id] >= 60000
-) {
-
-  const logs = autorollLogs[id];
-
-  autorollLogs[id] = [];
-
-  let totalRolls = logs.length;
-
-  let pointsGained = 0;
-
-  let totalLevels = 0;
-
-  let highest = null;
-
-  for (const r of logs) {
-
-    pointsGained += r.gain || 0;
-
-    totalLevels += r.levels || 0;
+    if (!lastSeen[id]) {
+      lastSeen[id] = now;
+    }
 
     if (
-      !highest ||
-      (points[r.name] || 0) >
-      (points[highest.name] || 0)
+      autorollLogs[id]?.length &&
+      now - lastSeen[id] >= 60000
     ) {
-      highest = r;
-    }
-  }
 
-  const embed = new EmbedBuilder()
-    .setColor(0xFFDE10)
-    .setTitle("⏳ Roll Summary")
-    .addFields(
-      {
-        name: "🎲 Times Rolled",
-        value: `${totalRolls}`,
-        inline: true
-      },
-      {
-        name: "💎 Rarest Roll",
-        value: highest
-          ? `${highest.name} (${highest.display})`
-          : "None",
-        inline: true
-      },
-      {
-        name: "📈 Points Gained",
-        value: `${pointsGained.toLocaleString()}`,
-        inline: true
-      },
-      {
-        name: "⭐ Leveled Up",
-        value: `${totalLevels} times`,
-        inline: true
+      const logs = autorollLogs[id];
+
+      autorollLogs[id] = [];
+
+      let totalRolls = logs.length;
+
+      let pointsGained = 0;
+
+      let totalLevels = 0;
+
+      let highest = null;
+
+      for (const r of logs) {
+
+        pointsGained += r.gain || 0;
+
+        totalLevels += r.levels || 0;
+
+        if (
+          !highest ||
+          (points[r.name] || 0) >
+          (points[highest.name] || 0)
+        ) {
+          highest = r;
+        }
       }
-    )
-    .setFooter({
-      text: "Autoroll System"
-    })
-    .setTimestamp();
 
-  await msg.channel.send({
-    embeds: [embed]
-  });
-}
+      const channel =
+        client.channels.cache.get(CHANNEL_ID);
 
-lastSeen[id] = now;
+      if (channel) {
 
+        const embed = new EmbedBuilder()
+          .setColor(0xFFDE10)
+          .setTitle("⏳ Roll Summary")
+          .addFields(
+            {
+              name: "🎲 Times Rolled",
+              value: `${totalRolls}`,
+              inline: true
+            },
+            {
+              name: "💎 Rarest Roll",
+              value: highest
+                ? `${highest.name} (${highest.display})`
+                : "None",
+              inline: true
+            },
+            {
+              name: "📈 Points Gained",
+              value: `${pointsGained.toLocaleString()}`,
+              inline: true
+            },
+            {
+              name: "⭐ Leveled Up",
+              value: `${totalLevels} times`,
+              inline: true
+            }
+          )
+          .setFooter({
+            text: "Autoroll System"
+          })
+          .setTimestamp();
+
+        channel.send({
+          embeds: [embed]
+        }).catch(() => {});
+      }
+
+      lastSeen[id] = now;
+    }
+
+  }, speed);
+  
 // ================= BOT =================
 client.on("messageCreate", async (msg) => {
   try {
