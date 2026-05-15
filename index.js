@@ -287,6 +287,9 @@ function startAutoroll(id) {
 
 saveData();
 
+      }, speed);
+}
+
 // ================= AUTOROLL SUMMARY ON MANUAL ROLL =================
 if (autorollLogs[id] && autorollLogs[id].length > 0) {
 
