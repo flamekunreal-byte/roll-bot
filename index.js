@@ -62,42 +62,42 @@ const roles = {
 function roll() {
   const rand = Math.random();
 
-  if (rand < 1/100000000) return "Everything III";
-  if (rand < 1/10000000) return "Everything II";
-  if (rand < 1/5000000) return "Everything I";
+  if (rand < 1 / 100000000) return ["Everything III", "Everything III (1/100,000,000)"];
+  if (rand < 1 / 10000000) return ["Everything II", "Everything II (1/10,000,000)"];
+  if (rand < 1 / 5000000) return ["Everything I", "Everything I (1/5,000,000)"];
 
-  if (rand < 1/2000000) return "Deep Research III";
-  if (rand < 1/1000000) return "Deep Research II";
-  if (rand < 1/750000) return "Deep Research I";
+  if (rand < 1 / 2000000) return ["Deep Research III", "Deep Research III (1/2,000,000)"];
+  if (rand < 1 / 1000000) return ["Deep Research II", "Deep Research II (1/1,000,000)"];
+  if (rand < 1 / 750000) return ["Deep Research I", "Deep Research I (1/750,000)"];
 
-  if (rand < 1/500000) return "Automation III";
-  if (rand < 1/250000) return "Automation II";
-  if (rand < 1/150000) return "Automation I";
+  if (rand < 1 / 500000) return ["Automation III", "Automation III (1/500,000)"];
+  if (rand < 1 / 250000) return ["Automation II", "Automation II (1/250,000)"];
+  if (rand < 1 / 150000) return ["Automation I", "Automation I (1/150,000)"];
 
-  if (rand < 1/100000) return "Tier III";
-  if (rand < 1/75000) return "Tier II";
-  if (rand < 1/50000) return "Tier I";
+  if (rand < 1 / 100000) return ["Tier III", "Tier III (1/100,000)"];
+  if (rand < 1 / 75000) return ["Tier II", "Tier II (1/75,000)"];
+  if (rand < 1 / 50000) return ["Tier I", "Tier I (1/50,000)"];
 
-  if (rand < 1/30000) return "Dark Part III";
-  if (rand < 1/15000) return "Dark Part II";
-  if (rand < 1/7000) return "Dark Part I";
+  if (rand < 1 / 30000) return ["Dark Part III", "Dark Part III (1/30,000)"];
+  if (rand < 1 / 15000) return ["Dark Part II", "Dark Part II (1/15,000)"];
+  if (rand < 1 / 7000) return ["Dark Part I", "Dark Part I (1/7,000)"];
 
-  if (rand < 1/4000) return "Rainbow Part III";
-  if (rand < 1/2000) return "Rainbow Part II";
-  if (rand < 1/1000) return "Rainbow Part I";
+  if (rand < 1 / 4000) return ["Rainbow Part III", "Rainbow Part III (1/4,000)"];
+  if (rand < 1 / 2000) return ["Rainbow Part II", "Rainbow Part II (1/2,000)"];
+  if (rand < 1 / 1000) return ["Rainbow Part I", "Rainbow Part I (1/1,000)"];
 
-  if (rand < 1/600) return "Gold Part III";
-  if (rand < 1/300) return "Gold Part II";
-  if (rand < 1/150) return "Gold Part I";
+  if (rand < 1 / 600) return ["Gold Part III", "Gold Part III (1/600)"];
+  if (rand < 1 / 300) return ["Gold Part II", "Gold Part II (1/300)"];
+  if (rand < 1 / 150) return ["Gold Part I", "Gold Part I (1/150)"];
 
-  if (rand < 1/75) return "Reset III";
-  if (rand < 1/40) return "Reset II";
-  if (rand < 1/20) return "Reset I";
+  if (rand < 1 / 75) return ["Reset III", "Reset III (1/75)"];
+  if (rand < 1 / 40) return ["Reset II", "Reset II (1/40)"];
+  if (rand < 1 / 20) return ["Reset I", "Reset I (1/20)"];
 
-  if (rand < 1/10) return "Part III";
-  if (rand < 1/6) return "Part II";
+  if (rand < 1 / 10) return ["Part III", "Part III (1/10)"];
+  if (rand < 1 / 6) return ["Part II", "Part II (1/6)"];
 
-  return "Part I";
+  return ["Part I", "Part I (1/3)"];
 }
 
 client.on("ready", () => {
@@ -109,18 +109,17 @@ client.on("messageCreate", async (message) => {
   if (message.channel.id !== process.env.CHANNEL_ID) return;
   if (message.content !== "?roll") return;
 
-  const result = roll();
+  const [rarityKey, displayText] = roll();
   const member = message.member;
 
   if (!userData[member.id]) {
     userData[member.id] = [];
   }
 
-  const alreadyOwned = userData[member.id].includes(result);
+  const alreadyOwned = userData[member.id].includes(rarityKey);
 
-  const roleId = roles[result];
+  const roleId = roles[rarityKey];
 
-  // try to give role safely
   try {
     if (roleId && !member.roles.cache.has(roleId)) {
       await member.roles.add(roleId);
@@ -129,11 +128,12 @@ client.on("messageCreate", async (message) => {
     console.log("Role error:", err);
   }
 
-  let reply = `🎲 You got: **${result}**`;
+  let reply = `🎲 You got: **${displayText}**`;
 
   if (!alreadyOwned) {
-    userData[member.id].push(result);
+    userData[member.id].push(rarityKey);
     saveData();
+
     reply += `\n🎉 You have been awarded with a new role`;
   }
 
