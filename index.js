@@ -294,22 +294,35 @@ client.on("messageCreate", async (msg) => {
       const e = effect(r.name);
 
       const embed = new EmbedBuilder()
-        .setColor(e.color)
-        .setTitle("🎲 Roll Result")
-        .addFields(
-          {
-            name: "✨ Result",
-            value: `${r.name} [${r.display}]`
-          },
-          {
-            name: "📈 Progress",
-            value: `⭐ Level: ${u.level}\nXP: ${u.xp}/${xpNeeded(u.level)}`
-          },
-          {
-            name: "⚡ Stats",
-            value: `🎲 Rolls: ${u.rolls}\n🍀 Luck: x${luck.toFixed(2)}`
-          }
-        );
+  .setColor(e.color)
+  .setTitle("🎲 Roll Result 🎲")
+  .addFields(
+    {
+      name: "✨Result✨",
+      value: `${r.name} [${r.display}]`,
+      inline: false
+    },
+    {
+      name: "📈Progress📈",
+      value:
+        `⭐Level: ${u.level}\n` +
+        `XP: ${u.xp}/${xpNeeded(u.level)} [+${gain}]`,
+      inline: false
+    },
+    {
+      name: "⚡Roll Stats⚡",
+      value:
+        `🔁Rolls: ${u.rolls}\n` +
+        `🍀Luck: x${luck.toFixed(2)}`,
+      inline: false
+    }
+  )
+  .setFooter({
+    text:
+      `RNG System Luck Engine Active • ` +
+      `${new Date().toLocaleTimeString()}`
+  })
+  .setTimestamp();
 
       if (dice) {
         embed.addFields({
@@ -484,6 +497,86 @@ XP: ${u.xp}/${xpNeeded(u.level)}
     msg.reply("An error occurred.");
   }
 });
+
+    // ================= LEADERBOARD =================
+    if (msg.content === "?leaderboard") {
+
+      const entries = Object.entries(userData);
+
+      const getName = (id) =>
+        msg.guild.members.cache.get(id)?.displayName || "Unknown";
+
+      const getRarestCount = (u) => {
+        if (!u.rarest) return 0;
+        return u.owned?.[u.rarest] || 0;
+      };
+
+      const tops = [...entries]
+        .sort((a, b) => b[1].rolls - a[1].rolls)
+        .slice(0, 5)
+        .map((x, i) =>
+          `${i + 1}. 🎲 ${getName(x[0])} — ${x[1].rolls.toLocaleString()}`
+        )
+        .join("\n");
+
+      const topLevel = [...entries]
+        .sort((a, b) => b[1].level - a[1].level)
+        .slice(0, 5)
+        .map((x, i) =>
+          `${i + 1}. ⭐ ${getName(x[0])} — Level ${x[1].level}`
+        )
+        .join("\n");
+
+      const topRebirths = [...entries]
+        .sort((a, b) => b[1].rebirths - a[1].rebirths)
+        .slice(0, 5)
+        .map((x, i) =>
+          `${i + 1}. 🔄 ${getName(x[0])} — ${x[1].rebirths}`
+        )
+        .join("\n");
+
+      const topRarest = [...entries]
+        .sort((a, b) => getRarestCount(b[1]) - getRarestCount(a[1]))
+        .slice(0, 5)
+        .map((x, i) => {
+          const u = x[1];
+          const rare = u.rarest || "None";
+          const count = getRarestCount(u);
+
+          return `${i + 1}. 💎 ${getName(x[0])} — ${rare} (${count})`;
+        })
+        .join("\n");
+
+      return msg.reply({
+        embeds: [
+          new EmbedBuilder()
+            .setColor(COLOR)
+            .setTitle("📊 Leaderboards")
+            .addFields(
+              {
+                name: "🎲 Total Rolls",
+                value: tops || "None"
+              },
+              {
+                name: "⭐ Levels",
+                value: topLevel || "None"
+              },
+              {
+                name: "🔄 Rebirths",
+                value: topRebirths || "None"
+              },
+              {
+                name: "💎 Rarest Rolls",
+                value: topRarest || "None"
+              }
+            )
+            .setFooter({
+              text: "RNG Leaderboard System"
+            })
+            .setTimestamp()
+        ]
+      });
+    }
 
 // ================= LOGIN =================
 client.login(process.env.TOKEN);
