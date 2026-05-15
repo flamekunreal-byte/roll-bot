@@ -17,50 +17,20 @@ const client = new Client({
 
 // ---------------- DATA ----------------
 let userData = {};
-let pendingRebirth = {};
 let activeBoost = {};
+let pendingRebirth = {};
 
-// ---------------- ROLE REWARDS ----------------
-const roleRewards = {
-  "Part I": "1504750381539004477",
-  "Part II": "1504750412132253807",
-  "Part III": "1504750442029256714",
-  "Reset I": "1504750482449764422",
-  "Reset II": "1504750515613995089",
-  "Reset III": "1504750540892934164",
-  "Gold Part I": "1504750609285386280",
-  "Gold Part II": "1504750658157281451",
-  "Gold Part III": "1504750678961033257",
-  "Rainbow Part I": "1504750984553824326",
-  "Rainbow Part II": "1504751068242771968",
-  "Rainbow Part III": "1504751085980745759",
-  "Dark Part I": "1504751136815579246",
-  "Dark Part II": "1504751199168237709",
-  "Dark Part III": "1504751221884452895",
-  "Tier I": "1504751280554246247",
-  "Tier II": "1504751329808220180",
-  "Tier III": "1504751354156027915",
-  "Automation I": "1504751406589153372",
-  "Automation II": "1504751456388124732",
-  "Automation III": "1504751471957114980",
-  "Deep Research I": "1504751515599114240",
-  "Deep Research II": "1504751560356528269",
-  "Deep Research III": "1504751581336440972",
-  "Everything I": "1504751610167951470",
-  "Everything II": "1504751729076473966",
-  "Everything III": "1504751748986962030"
-};
-
-// ---------------- SAVE ----------------
+// ---------------- LOAD / SAVE ----------------
 function loadData() {
   if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, "{}");
   userData = JSON.parse(fs.readFileSync(DATA_FILE, "utf8") || "{}");
 }
+
 function saveData() {
   fs.writeFileSync(DATA_FILE, JSON.stringify(userData, null, 2));
 }
-loadData();
 
+loadData();
 process.on("exit", saveData);
 process.on("SIGINT", () => { saveData(); process.exit(); });
 
@@ -74,8 +44,10 @@ function getUser(id) {
       rebirths: 0,
       owned: {},
       rarest: null,
+
       autorollEnabled: false,
       autorollRunning: false,
+
       inventory: {
         "Lucky Dice": 0,
         "Golden Lucky Dice": 0,
@@ -113,44 +85,65 @@ const points = {
   "Everything I": 5000, "Everything II": 7500, "Everything III": 10000
 };
 
+// ---------------- DICE ----------------
+function giveDice(user) {
+  const r = Math.random();
+
+  if (r < 1 / 10000) return user.inventory["Cosmic Lucky Dice"]++, "🌌 Cosmic Dice";
+  if (r < 1 / 2500) return user.inventory["Diamond Lucky Dice"]++, "💎 Diamond Dice";
+  if (r < 1 / 500) return user.inventory["Golden Lucky Dice"]++, "🥇 Golden Dice";
+  if (r < 1 / 50) return user.inventory["Lucky Dice"]++, "🎲 Lucky Dice";
+
+  return null;
+}
+
 // ---------------- ROLL ----------------
 function roll(luck) {
-  const check = (c, n, d) =>
-    Math.random() < c * luck ? { name: n, display: d } : null;
+  const c = (chance, name, display) =>
+    Math.random() < chance * luck ? { name, display } : null;
 
   return (
-    check(1 / 100000000, "Everything III", "1/100M") ||
-    check(1 / 10000000, "Everything II", "1/10M") ||
-    check(1 / 5000000, "Everything I", "1/5M") ||
-    check(1 / 2000000, "Deep Research III", "1/2M") ||
-    check(1 / 1000000, "Deep Research II", "1/1M") ||
-    check(1 / 750000, "Deep Research I", "1/750K") ||
-    check(1 / 500000, "Automation III", "1/500K") ||
-    check(1 / 250000, "Automation II", "1/250K") ||
-    check(1 / 150000, "Automation I", "1/150K") ||
-    check(1 / 100000, "Tier III", "1/100K") ||
-    check(1 / 75000, "Tier II", "1/75K") ||
-    check(1 / 50000, "Tier I", "1/50K") ||
-    check(1 / 30000, "Dark Part III", "1/30K") ||
-    check(1 / 15000, "Dark Part II", "1/15K") ||
-    check(1 / 7000, "Dark Part I", "1/7K") ||
-    check(1 / 4000, "Rainbow Part III", "1/4K") ||
-    check(1 / 2000, "Rainbow Part II", "1/2K") ||
-    check(1 / 1000, "Rainbow Part I", "1/1K") ||
-    check(1 / 600, "Gold Part III", "1/600") ||
-    check(1 / 300, "Gold Part II", "1/300") ||
-    check(1 / 150, "Gold Part I", "1/150") ||
-    check(1 / 75, "Reset III", "1/75") ||
-    check(1 / 40, "Reset II", "1/40") ||
-    check(1 / 20, "Reset I", "1/20") ||
-    check(1 / 10, "Part III", "1/10") ||
-    check(1 / 6, "Part II", "1/6") ||
+    c(1 / 100000000, "Everything III", "1/100M") ||
+    c(1 / 10000000, "Everything II", "1/10M") ||
+    c(1 / 5000000, "Everything I", "1/5M") ||
+
+    c(1 / 2000000, "Deep Research III", "1/2M") ||
+    c(1 / 1000000, "Deep Research II", "1/1M") ||
+    c(1 / 750000, "Deep Research I", "1/750K") ||
+
+    c(1 / 500000, "Automation III", "1/500K") ||
+    c(1 / 250000, "Automation II", "1/250K") ||
+    c(1 / 150000, "Automation I", "1/150K") ||
+
+    c(1 / 100000, "Tier III", "1/100K") ||
+    c(1 / 75000, "Tier II", "1/75K") ||
+    c(1 / 50000, "Tier I", "1/50K") ||
+
+    c(1 / 30000, "Dark Part III", "1/30K") ||
+    c(1 / 15000, "Dark Part II", "1/15K") ||
+    c(1 / 7000, "Dark Part I", "1/7K") ||
+
+    c(1 / 4000, "Rainbow Part III", "1/4K") ||
+    c(1 / 2000, "Rainbow Part II", "1/2K") ||
+    c(1 / 1000, "Rainbow Part I", "1/1K") ||
+
+    c(1 / 600, "Gold Part III", "1/600") ||
+    c(1 / 300, "Gold Part II", "1/300") ||
+    c(1 / 150, "Gold Part I", "1/150") ||
+
+    c(1 / 75, "Reset III", "1/75") ||
+    c(1 / 40, "Reset II", "1/40") ||
+    c(1 / 20, "Reset I", "1/20") ||
+
+    c(1 / 10, "Part III", "1/10") ||
+    c(1 / 6, "Part II", "1/6") ||
+
     { name: "Part I", display: "1/3" }
   );
 }
 
 // ---------------- EFFECTS ----------------
-function getRarityEffect(name) {
+function getEffect(name) {
   const v = points[name] || 0;
   if (v >= 7500) return { color: 0xFF00FF, title: "🌌 MYTHIC DROP!" };
   if (v >= 2500) return { color: 0xFF4500, title: "🔥 LEGENDARY DROP!" };
@@ -160,14 +153,16 @@ function getRarityEffect(name) {
   return { color: COLOR, title: "🎲 Roll Result" };
 }
 
-// ---------------- AUTOROLL ----------------
-async function autorollUser(id) {
+// ---------------- AUTOROLL (FULL RESTORE) ----------------
+async function autorollLoop(id) {
   const u = getUser(id);
   if (!u.autorollEnabled) return;
 
   let base = 10000;
+
+  // rebirth scaling (-1s after rebirth 3, capped at 5s min delay)
   let reduction = u.rebirths >= 3 ? (u.rebirths - 2) * 1000 : 0;
-  const delay = Math.max(5000, base - reduction);
+  let delay = Math.max(5000, base - reduction);
 
   setTimeout(async () => {
     if (!u.autorollEnabled) return;
@@ -189,11 +184,11 @@ async function autorollUser(id) {
     }
 
     saveData();
-    autorollUser(id);
+    autorollLoop(id);
   }, delay);
 }
 
-// ---------------- BOT ----------------
+// ---------------- MESSAGE HANDLER ----------------
 client.on("messageCreate", async (msg) => {
   if (!msg.guild || msg.author.bot) return;
 
@@ -230,41 +225,41 @@ client.on("messageCreate", async (msg) => {
       leveled = true;
     }
 
-    const effect = getRarityEffect(r.name);
+    const effect = getEffect(r.name);
 
     const embed = new EmbedBuilder()
       .setColor(effect.color)
       .setTitle(effect.title)
       .addFields(
-        { name: "✨ Result", value: `🎲 ${r.name} (${r.display})` },
+        { name: "✨ Result", value: `${r.name} (${r.display})` },
         { name: "📊 Level", value: `${u.level} | XP ${u.xp}/${xpNeeded(u.level)}` },
         { name: "⚡ Rolls", value: `${u.rolls}` }
       );
 
     if (leveled) embed.addFields({ name: "⬆️ Level Up!", value: "YES" });
 
-    await anim.edit({ content: "", embeds: [embed] });
-
-    const roleId = roleRewards[r.name];
-    if (roleId) try { await msg.member.roles.add(roleId); } catch {}
+    await anim.edit({ embeds: [embed], content: "" });
 
     return;
   }
 
-  // ================= REBIRTH + MILESTONES =================
+  // ================= REBIRTH =================
   if (msg.content === "?rebirth") {
     const req = Math.floor(1000 * Math.pow(2.5, u.rebirths));
     if (u.rolls < req) return msg.reply(`Need ${req} rolls`);
 
     u.rebirths++;
 
-    if (u.rebirths === 1) u.autorollEnabled = true;
-    if (u.rebirths === 2) {}
-    if (u.rebirths >= 3) {
-      if (!u.autorollRunning) {
-        u.autorollRunning = true;
-        autorollUser(msg.author.id);
-      }
+    // milestone 1
+    if (u.rebirths === 1) {
+      u.autorollEnabled = true;
+      autorollLoop(msg.author.id);
+    }
+
+    // milestone 3+
+    if (u.rebirths >= 3 && !u.autorollRunning) {
+      u.autorollRunning = true;
+      autorollLoop(msg.author.id);
     }
 
     u.level = 1;
@@ -277,34 +272,69 @@ client.on("messageCreate", async (msg) => {
       .setColor(COLOR)
       .setTitle("🔄 REBIRTH COMPLETED")
       .addFields(
-        { name: "Rebirth", value: `${u.rebirths}` },
+        { name: "Rebirths", value: `${u.rebirths}` },
         {
-          name: "Milestones Unlocked",
+          name: "Milestones",
           value:
-            u.rebirths === 1 ? "✔ Autoroll unlocked (10s)" :
-            u.rebirths === 2 ? "✔ XP multiplier unlocked (1.5x scaling)" :
-            u.rebirths >= 3 ? "✔ Autoroll speed scaling active (-1s per rebirth after 3)" :
-            "None"
+            u.rebirths === 1
+              ? "✔ Autoroll unlocked (10s)"
+              : u.rebirths === 2
+              ? "✔ XP multiplier unlocked (1.5x scaling)"
+              : u.rebirths >= 3
+              ? "✔ Autoroll speed scaling active"
+              : "None"
         }
       );
 
     return msg.reply({ embeds: [embed] });
   }
 
-  // ================= PROFILE =================
-  if (msg.content.startsWith("?profile")) {
-    const user = msg.mentions.users.first() || msg.author;
-    const p = getUser(user.id);
+  // ================= INVENTORY =================
+  if (msg.content === "?inv") {
+    const inv = u.inventory;
 
     return msg.reply({
       embeds: [
         new EmbedBuilder()
           .setColor(COLOR)
-          .setTitle(`📊 Profile - ${user.username}`)
+          .setTitle("🎒 Inventory")
+          .setDescription(
+            `🎲 Lucky Dice: ${inv["Lucky Dice"]}\n` +
+            `🥇 Golden Dice: ${inv["Golden Lucky Dice"]}\n` +
+            `💎 Diamond Dice: ${inv["Diamond Lucky Dice"]}\n` +
+            `🌌 Cosmic Dice: ${inv["Cosmic Lucky Dice"]}`
+          )
+      ]
+    });
+  }
+
+  // ================= LEADERBOARD =================
+  if (msg.content === "?leaderboard") {
+    const entries = Object.entries(userData);
+
+    const getName = (id) =>
+      msg.guild.members.cache.get(id)?.displayName || "Unknown";
+
+    const topRolls = entries
+      .sort((a, b) => b[1].rolls - a[1].rolls)
+      .slice(0, 5)
+      .map((x, i) => `${i + 1}. ${getName(x[0])} - ${x[1].rolls}`)
+      .join("\n");
+
+    const topLevels = entries
+      .sort((a, b) => b[1].level - a[1].level)
+      .slice(0, 5)
+      .map((x, i) => `${i + 1}. ${getName(x[0])} - ${x[1].level}`)
+      .join("\n");
+
+    return msg.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(COLOR)
+          .setTitle("📊 Leaderboards")
           .addFields(
-            { name: "Level", value: `${p.level}`, inline: true },
-            { name: "Rolls", value: `${p.rolls}`, inline: true },
-            { name: "Rebirths", value: `${p.rebirths}`, inline: true }
+            { name: "🔁 Rolls", value: topRolls || "None" },
+            { name: "⭐ Levels", value: topLevels || "None" }
           )
       ]
     });
