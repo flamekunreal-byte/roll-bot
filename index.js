@@ -149,6 +149,7 @@ client.on("messageCreate", async (msg) => {
     const r = roll(luck);
 
     u.rolls++;
+
     const xpGain = points[r.name] || 1;
     u.xp += xpGain;
 
@@ -176,18 +177,15 @@ client.on("messageCreate", async (msg) => {
       .addFields(
         {
           name: "✨ Rarity",
-          value: `🎲 **${r.name}** ︱ ${r.display}`,
-          inline: false
+          value: `🎲 **${r.name}** ︱ ${r.display}`
         },
         {
           name: "📊 Progress",
-          value: `⭐ Level: **${u.level}** ︱ 📈 ${u.xp}/${xpNeeded(u.level)} ︱ ➕ +${xpGain} XP`,
-          inline: false
+          value: `⭐ Level: **${u.level}** ︱ 📈 ${u.xp}/${xpNeeded(u.level)} ︱ ➕ +${xpGain} XP`
         },
         {
-          name: "⚡️ Rolling Stats",
-          value: `🔁 Rolls: **${u.rolls}** ︱ 🍀 Luck: **x${luck.toFixed(2)}**`,
-          inline: false
+          name: "⚡ Rolling Stats",
+          value: `🔁 Rolls: **${u.rolls}** ︱ 🍀 Luck: **x${luck.toFixed(2)}**`
         }
       );
 
@@ -197,12 +195,11 @@ client.on("messageCreate", async (msg) => {
         value: `🎲 You found: **${dice}**`
       });
 
-   if (leveled) {
-  embed.addFields({
-    name: "⬆️ Level Up!",
-    value: "⠀"
-  });
-}
+    if (leveled)
+      embed.addFields({
+        name: "⬆️ Level Up!",
+        value: "⭐ You leveled up!"
+      });
 
     return msg.reply({ embeds: [embed] });
   }
@@ -239,46 +236,43 @@ client.on("messageCreate", async (msg) => {
           .addFields(
             { name: "⭐ Level", value: `⭐ ${p.level}`, inline: true },
             { name: "🔁 Rolls", value: `🔁 ${p.rolls}`, inline: true },
-            { name: "💎 Rarest Roll", value: `💎 ${p.rarest || "None"}` }
+            { name: "💎 Rarest", value: `💎 ${p.rarest || "None"}` }
           )
       ]
     });
   }
-  
-// ================= ADMIN ROLLS EDIT =================
-if (msg.content.startsWith("?rolls")) {
-  if (!msg.member.permissions.has("Administrator")) {
-    return msg.reply("❌ You don't have permission.");
+
+  // ================= ADMIN ROLLS =================
+  if (msg.content.startsWith("?rolls")) {
+    if (!msg.member.permissions.has("Administrator")) {
+      return msg.reply("❌ No permission.");
+    }
+
+    const args = msg.content.split(" ");
+    const action = args[1];
+    const amount = parseInt(args[2]);
+
+    if (!action || isNaN(amount)) {
+      return msg.reply("❌ Use: ?rolls add/remove <amount>");
+    }
+
+    if (amount <= 0) return msg.reply("❌ Invalid amount.");
+
+    if (action === "add") {
+      u.rolls += amount;
+      saveData();
+      return msg.reply(`✅ Added ${amount} rolls.`);
+    }
+
+    if (action === "remove") {
+      u.rolls = Math.max(0, u.rolls - amount);
+      saveData();
+      return msg.reply(`✅ Removed ${amount} rolls.`);
+    }
+
+    return msg.reply("❌ Invalid action.");
   }
 
-  const args = msg.content.split(" ");
-  const action = args[1];
-  const amount = parseInt(args[2]);
-
-  if (!action || isNaN(amount)) {
-    return msg.reply("❌ Use: ?rolls add/remove <amount>");
-  }
-
-  if (amount <= 0) {
-    return msg.reply("❌ Amount must be positive.");
-  }
-
-  const u = getUser(msg.author.id);
-
-  if (action === "add") {
-    u.rolls += amount;
-    saveData();
-    return msg.reply(`✅ Added **${amount} rolls** to yourself.`);
-  }
-
-  if (action === "remove") {
-    u.rolls = Math.max(0, u.rolls - amount);
-    saveData();
-    return msg.reply(`✅ Removed **${amount} rolls** from yourself.`);
-  }
-
-  return msg.reply("❌ Invalid action. Use add or remove.");
-}
   // ================= REBIRTH =================
   if (msg.content === "?rebirth") {
     const req = Math.floor(1000 * Math.pow(2.5, u.rebirths));
@@ -341,7 +335,7 @@ if (msg.content.startsWith("?rolls")) {
           .addFields(
             { name: "🔁 Rolls", value: topRolls || "None" },
             { name: "⭐ Levels", value: topLevels || "None" },
-            { name: "💎 Rarest Rolls", value: topRare || "None" }
+            { name: "💎 Rarest", value: topRare || "None" }
           )
       ]
     });
