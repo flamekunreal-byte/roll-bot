@@ -244,7 +244,41 @@ client.on("messageCreate", async (msg) => {
       ]
     });
   }
+  
+// ================= ADMIN ROLLS EDIT =================
+if (msg.content.startsWith("?rolls")) {
+  if (!msg.member.permissions.has("Administrator")) {
+    return msg.reply("❌ You don't have permission.");
+  }
 
+  const args = msg.content.split(" ");
+  const action = args[1];
+  const amount = parseInt(args[2]);
+
+  if (!action || isNaN(amount)) {
+    return msg.reply("❌ Use: ?rolls add/remove <amount>");
+  }
+
+  if (amount <= 0) {
+    return msg.reply("❌ Amount must be positive.");
+  }
+
+  const u = getUser(msg.author.id);
+
+  if (action === "add") {
+    u.rolls += amount;
+    saveData();
+    return msg.reply(`✅ Added **${amount} rolls** to yourself.`);
+  }
+
+  if (action === "remove") {
+    u.rolls = Math.max(0, u.rolls - amount);
+    saveData();
+    return msg.reply(`✅ Removed **${amount} rolls** from yourself.`);
+  }
+
+  return msg.reply("❌ Invalid action. Use add or remove.");
+}
   // ================= REBIRTH =================
   if (msg.content === "?rebirth") {
     const req = Math.floor(1000 * Math.pow(2.5, u.rebirths));
