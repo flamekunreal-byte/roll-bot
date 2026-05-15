@@ -485,8 +485,8 @@ if (msg.content === "?leaderboard") {
         )
         .setFooter({ text: "RNG Leaderboard System" })
     ]
-  });
-}
-
-client.login(process.env.TOKEN);
+  }
 });
+
+// ================= LOGIN =================
+client.login(process.env.TOKEN);
