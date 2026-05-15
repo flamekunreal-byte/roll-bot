@@ -177,7 +177,6 @@ function startAutoroll(id){
 
   if (autorollIntervals[id]) return;
 
-  autorollIntervals[id] = setInterval(() => {
     const u = getUser(id);
     const luck = getLuck(u.level, u.rebirths);
     const r = roll(luck);
@@ -481,7 +480,7 @@ return msg.reply({
       .setColor(COLOR)
       .setTitle("📊 Leaderboards")
       .addFields(
-        { name: "🎲 Total Rolls", value: topRolls || "None" },
+       { name: "🎲 Total Rolls", value: tops || "None" },
         { name: "⭐ Levels", value: topLevel || "None" },
         { name: "🔄 Rebirths", value: topRebirths || "None" },
         { name: "💎 Rarest Rolls", value: topRarest || "None" }
@@ -489,8 +488,4 @@ return msg.reply({
       .setFooter({ text: "RNG Leaderboard System" })
   ]
 });
-
-
-}); // ⬅️ THIS CLOSES messageCreate EVENT (YOU WERE MISSING THIS)
-
 client.login(process.env.TOKEN);
