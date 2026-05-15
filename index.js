@@ -21,7 +21,7 @@ function saveData() {
   fs.writeFileSync(DATA_FILE, JSON.stringify(userData, null, 2));
 }
 
-/* ================= ROLE MAP ================= */
+/* ===================== ROLES ===================== */
 const roles = {
   "Part I": "1504750381539004477",
   "Part II": "1504750412132253807",
@@ -60,7 +60,7 @@ const roles = {
   "Everything III": "1504751748986962030"
 };
 
-/* ================= POINT VALUES ================= */
+/* ===================== POINTS ===================== */
 const points = {
   "Part I": 1,
   "Part II": 2,
@@ -99,49 +99,49 @@ const points = {
   "Everything III": 10000
 };
 
-/* ================= ROLL SYSTEM ================= */
+/* ===================== ROLL ===================== */
 function roll() {
-  const rand = Math.random();
+  const r = Math.random();
 
-  if (rand < 1 / 100000000) return ["Everything III", "1/100,000,000"];
-  if (rand < 1 / 10000000) return ["Everything II", "1/10,000,000"];
-  if (rand < 1 / 5000000) return ["Everything I", "1/5,000,000"];
+  if (r < 1 / 100000000) return ["Everything III", "1/100,000,000"];
+  if (r < 1 / 10000000) return ["Everything II", "1/10,000,000"];
+  if (r < 1 / 5000000) return ["Everything I", "1/5,000,000"];
 
-  if (rand < 1 / 2000000) return ["Deep Research III", "1/2,000,000"];
-  if (rand < 1 / 1000000) return ["Deep Research II", "1/1,000,000"];
-  if (rand < 1 / 750000) return ["Deep Research I", "1/750,000"];
+  if (r < 1 / 2000000) return ["Deep Research III", "1/2,000,000"];
+  if (r < 1 / 1000000) return ["Deep Research II", "1/1,000,000"];
+  if (r < 1 / 750000) return ["Deep Research I", "1/750,000"];
 
-  if (rand < 1 / 500000) return ["Automation III", "1/500,000"];
-  if (rand < 1 / 250000) return ["Automation II", "1/250,000"];
-  if (rand < 1 / 150000) return ["Automation I", "1/150,000"];
+  if (r < 1 / 500000) return ["Automation III", "1/500,000"];
+  if (r < 1 / 250000) return ["Automation II", "1/250,000"];
+  if (r < 1 / 150000) return ["Automation I", "1/150,000"];
 
-  if (rand < 1 / 100000) return ["Tier III", "1/100,000"];
-  if (rand < 1 / 75000) return ["Tier II", "1/75,000"];
-  if (rand < 1 / 50000) return ["Tier I", "1/50,000"];
+  if (r < 1 / 100000) return ["Tier III", "1/100,000"];
+  if (r < 1 / 75000) return ["Tier II", "1/75,000"];
+  if (r < 1 / 50000) return ["Tier I", "1/50,000"];
 
-  if (rand < 1 / 30000) return ["Dark Part III", "1/30,000"];
-  if (rand < 1 / 15000) return ["Dark Part II", "1/15,000"];
-  if (rand < 1 / 7000) return ["Dark Part I", "1/7,000"];
+  if (r < 1 / 30000) return ["Dark Part III", "1/30,000"];
+  if (r < 1 / 15000) return ["Dark Part II", "1/15,000"];
+  if (r < 1 / 7000) return ["Dark Part I", "1/7,000"];
 
-  if (rand < 1 / 4000) return ["Rainbow Part III", "1/4,000"];
-  if (rand < 1 / 2000) return ["Rainbow Part II", "1/2,000"];
-  if (rand < 1 / 1000) return ["Rainbow Part I", "1/1,000"];
+  if (r < 1 / 4000) return ["Rainbow Part III", "1/4,000"];
+  if (r < 1 / 2000) return ["Rainbow Part II", "1/2,000"];
+  if (r < 1 / 1000) return ["Rainbow Part I", "1/1,000"];
 
-  if (rand < 1 / 600) return ["Gold Part III", "1/600"];
-  if (rand < 1 / 300) return ["Gold Part II", "1/300"];
-  if (rand < 1 / 150) return ["Gold Part I", "1/150"];
+  if (r < 1 / 600) return ["Gold Part III", "1/600"];
+  if (r < 1 / 300) return ["Gold Part II", "1/300"];
+  if (r < 1 / 150) return ["Gold Part I", "1/150"];
 
-  if (rand < 1 / 75) return ["Reset III", "1/75"];
-  if (rand < 1 / 40) return ["Reset II", "1/40"];
-  if (rand < 1 / 20) return ["Reset I", "1/20"];
+  if (r < 1 / 75) return ["Reset III", "1/75"];
+  if (r < 1 / 40) return ["Reset II", "1/40"];
+  if (r < 1 / 20) return ["Reset I", "1/20"];
 
-  if (rand < 1 / 10) return ["Part III", "1/10"];
-  if (rand < 1 / 6) return ["Part II", "1/6"];
+  if (r < 1 / 10) return ["Part III", "1/10"];
+  if (r < 1 / 6) return ["Part II", "1/6"];
 
   return ["Part I", "1/3"];
 }
 
-/* ================= USER SYSTEM ================= */
+/* ===================== USER ===================== */
 function getUser(id) {
   if (!userData[id]) {
     userData[id] = {
@@ -153,16 +153,16 @@ function getUser(id) {
   return userData[id];
 }
 
-/* ================= LEVEL SYSTEM ================= */
-function getLevelCost(level) {
+/* ===================== LEVEL SYSTEM ===================== */
+function levelCost(level) {
   return Math.floor(5 * Math.pow(1.5, level));
 }
 
-function getLuck(level) {
+function luck(level) {
   return Math.pow(1.2, level);
 }
 
-/* ================= BOT ================= */
+/* ===================== BOT ===================== */
 client.on("ready", () => {
   console.log(`Logged in as ${client.user.tag}`);
 });
@@ -173,25 +173,35 @@ client.on("messageCreate", async (message) => {
 
   const user = getUser(message.author.id);
 
-  /* ===== LEVEL UP COMMAND ===== */
+  /* ===== CHECK LEVEL ===== */
+  if (message.content === "?level") {
+    return message.reply(
+      `📊 Level: **${user.level}**\n` +
+      `💰 Points: **${user.points}**\n` +
+      `⬆️ Next Level Cost: **${levelCost(user.level)}**\n` +
+      `✨ Luck: x${luck(user.level).toFixed(2)}`
+    );
+  }
+
+  /* ===== LEVEL UP ===== */
   if (message.content === "?levelup") {
-    const cost = getLevelCost(user.level);
+    const cost = levelCost(user.level);
 
     if (user.points < cost) {
       return message.reply(`❌ You need **${cost} points** to level up.`);
     }
 
     user.points -= cost;
-    user.level += 1;
+    user.level++;
 
     saveData();
 
     return message.reply(
-      `⬆️ Level Up! You are now level **${user.level}**\n✨ Luck: x${getLuck(user.level).toFixed(2)}`
+      `⬆️ Level Up! You are now level **${user.level}**\n✨ Luck: x${luck(user.level).toFixed(2)}`
     );
   }
 
-  /* ===== ROLL COMMAND ===== */
+  /* ===== ROLL ===== */
   if (message.content !== "?roll") return;
 
   const [rarity, chance] = roll();
@@ -199,8 +209,7 @@ client.on("messageCreate", async (message) => {
   const roleId = roles[rarity];
   const basePoints = points[rarity] || 0;
 
-  const luck = getLuck(user.level);
-  const earned = Math.floor(basePoints * luck);
+  const earned = Math.floor(basePoints * luck(user.level));
 
   user.points += earned;
 
@@ -212,8 +221,8 @@ client.on("messageCreate", async (message) => {
     if (roleId && !message.member.roles.cache.has(roleId)) {
       await message.member.roles.add(roleId);
     }
-  } catch (err) {
-    console.log("Role error:", err);
+  } catch (e) {
+    console.log("Role error:", e);
   }
 
   saveData();
@@ -221,7 +230,7 @@ client.on("messageCreate", async (message) => {
   message.reply(
     `🎲 You got **${rarity}** (1/${chance})\n` +
     `⭐ +${earned} points\n` +
-    `💰 Level: ${user.level} | Luck: x${luck.toFixed(2)}`
+    `📊 Level: ${user.level} | Luck x${luck(user.level).toFixed(2)}`
   );
 });
 
