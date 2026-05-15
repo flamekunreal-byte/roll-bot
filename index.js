@@ -538,20 +538,28 @@ Rebirth 3+: AutoRoll speed -1s per rebirth (min 5s max reduction 5s)`
       })
       .join("\n");
 
-return msg.reply({
-  embeds: [
-    new EmbedBuilder()
-      .setColor(COLOR)
-      .setTitle("📊 Leaderboards")
-      .addFields(
-       { name: "🎲 Total Rolls", value: tops || "None" },
-        { name: "⭐ Levels", value: topLevel || "None" },
-        { name: "🔄 Rebirths", value: topRebirths || "None" },
-        { name: "💎 Rarest Rolls", value: topRarest || "None" }
-      )
-      .setFooter({ text: "RNG Leaderboard System" })
-  ]
+    return msg.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(COLOR)
+          .setTitle("📊 Leaderboards")
+          .addFields(
+            { name: "🎲 Total Rolls", value: tops || "None" },
+            { name: "⭐ Levels", value: topLevel || "None" },
+            { name: "🔄 Rebirths", value: topRebirths || "None" },
+            { name: "💎 Rarest Rolls", value: topRarest || "None" }
+          )
+          .setFooter({ text: "RNG Leaderboard System" })
+      ]
+    });
+  }
+
+} catch (err) {
+  console.error(err);
+  msg.reply("An error occurred.");
+}
+
 });
 
-    
+// ================= LOGIN =================
 client.login(process.env.TOKEN);
