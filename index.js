@@ -446,38 +446,67 @@ XP: ${u.xp}/${xpNeeded(u.level)}
       return msg.reply(`⚡ Used ${key}`);
     }
 
-    // ================= REBIRTH =================
-    if (msg.content === "?rebirth") {
-      const req = Math.floor(
-        1000 * Math.pow(2.5, u.rebirths)
-      );
+  // ================= REBIRTH =================
+if (msg.content === "?rebirth") {
 
-      if (u.rolls < req) {
-        return msg.reply(`Need ${req} rolls`);
-      }
+  const req = Math.floor(1000 * Math.pow(2.5, u.rebirths));
 
-      pendingRebirth[id] = true;
+  const embed = new EmbedBuilder()
+    .setColor(COLOR)
+    .setTitle("🔄 Rebirth System")
+    .setDescription(
+`Rebirth at **${req.toLocaleString()}** rolls
 
-      return msg.reply(
-        "Type `?rebirth confirm` to rebirth."
-      );
-    }
+🔓 Rebirth 1:
+• Unlock Autoroll (10s)
 
-    if (msg.content === "?rebirth confirm") {
-      if (!pendingRebirth[id]) return;
+⭐ Rebirth 2:
+• XP multiplier x1.5 per rebirth
 
-      u.rebirths++;
-      u.level = 1;
-      u.xp = 0;
-      u.rolls = 0;
+⚡ Rebirth 3+:
+• Autoroll speed improves by -1s
+• Max reduction: 5s total
+• Minimum autoroll speed: 5s`
+    )
+    .addFields({
+      name: "📊 Your Progress",
+      value:
+`🎲 Rolls: ${u.rolls.toLocaleString()}/${req.toLocaleString()}
+🔄 Current Rebirths: ${u.rebirths}`
+    })
+    .setFooter({
+      text: "Type ?rebirth confirm to rebirth"
+    });
 
-      pendingRebirth[id] = false;
+  return msg.reply({
+    embeds: [embed]
+  });
+}
+    
+// ================= REBIRTH CONFIRM =================
+if (msg.content === "?rebirth confirm") {
 
-      saveData();
+  const req = Math.floor(1000 * Math.pow(2.5, u.rebirths));
 
-      return msg.reply("✅ Rebirth complete");
-    }
+  if (u.rolls < req) {
+    return msg.reply(
+      `❌ You need ${req.toLocaleString()} rolls to rebirth`
+    );
+  }
 
+  u.rebirths++;
+
+  u.level = 1;
+  u.xp = 0;
+  u.rolls = 0;
+
+  saveData();
+
+  return msg.reply(
+    `✅ Rebirth successful! You are now Rebirth ${u.rebirths}`
+  );
+}
+    
    // ================= ADMIN =================
 if (isAdmin) {
 
