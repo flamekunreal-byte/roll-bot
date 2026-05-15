@@ -169,17 +169,10 @@ function effect(n){
 }
 
 // ================= AUTOROLL =================
-function getInterval(u){
-  let base = 10;
-  if(u.rebirths >= 3){
-    base -= Math.min(u.rebirths - 2, 5);
-  }
-  return Math.max(base, 5) * 1000;
-}
-
 function startAutoroll(id){
   const u = getUser(id);
 
+  // lock until rebirth 1
   if (u.rebirths < 1) return;
 
   if (autorollIntervals[id]) return;
@@ -199,18 +192,6 @@ function startAutoroll(id){
     saveData();
   }, getInterval(getUser(id)));
 }
-
-    u.rolls++;
-    u.xp += points[r.name]||1;
-    u.owned[r.name]=(u.owned[r.name]||0)+1;
-
-    if(!autorollLogs[id]) autorollLogs[id]=[];
-    autorollLogs[id].push(r);
-
-    saveData();
-  }, getInterval(getUser(id)));
-}
-
 // ================= BOT =================
 client.on("messageCreate", async (msg) => {
   if(!msg.guild || msg.author.bot) return;
