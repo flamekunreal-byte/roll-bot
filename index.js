@@ -185,7 +185,7 @@ client.on("messageCreate", async (msg) => {
           inline: false
         },
         {
-          name: "🔁 Stats",
+          name: "⚡️ Rolling Stats",
           value: `🔁 Rolls: **${u.rolls}** ︱ 🍀 Luck: **x${luck.toFixed(2)}**`,
           inline: false
         }
