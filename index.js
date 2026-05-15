@@ -19,12 +19,11 @@ function roll() {
   return "Mythic (1/1000)";
 }
 
-client.on("ready", () => {
-  console.log(`Logged in as ${client.user.tag}`);
-});
-
 client.on("messageCreate", (message) => {
   if (message.author.bot) return;
+
+  // only allow this channel
+  if (message.channel.id !== process.env.CHANNEL_ID) return;
 
   if (message.content === "?roll") {
     message.reply(`🎲 You got: **${roll()}**`);
