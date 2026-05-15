@@ -11,8 +11,8 @@ const client = new Client({
   allowedMentions: { parse: [] }
 });
 
-// 🔒 ONLY CHANGE THIS
-const ALLOWED_CHANNEL_ID = "PUT_YOUR_CHANNEL_ID_HERE";
+// 🔒 USE YOUR EXISTING CHANNEL VARIABLE HERE
+const channelId = YOUR_CHANNEL_ID; // <-- replace with your existing variable
 
 // -------------------- DATA --------------------
 const DATA_FILE = "./data.json";
@@ -21,17 +21,12 @@ let userData = {};
 let pendingRebirth = {};
 let activeBoost = {};
 
-// safer load/save (prevents corruption/reset issues)
 function loadData() {
   try {
-    if (!fs.existsSync(DATA_FILE)) {
-      fs.writeFileSync(DATA_FILE, "{}");
-    }
-
-    const raw = fs.readFileSync(DATA_FILE, "utf8");
-    userData = raw ? JSON.parse(raw) : {};
+    if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, "{}");
+    userData = JSON.parse(fs.readFileSync(DATA_FILE, "utf8") || "{}");
   } catch (err) {
-    console.error("Load error:", err);
+    console.error(err);
     userData = {};
   }
 }
@@ -40,7 +35,7 @@ function saveData() {
   try {
     fs.writeFileSync(DATA_FILE, JSON.stringify(userData, null, 2));
   } catch (err) {
-    console.error("Save error:", err);
+    console.error(err);
   }
 }
 
@@ -48,10 +43,7 @@ loadData();
 
 // auto-save protection
 process.on("exit", saveData);
-process.on("SIGINT", () => {
-  saveData();
-  process.exit();
-});
+process.on("SIGINT", () => { saveData(); process.exit(); });
 process.on("uncaughtException", (err) => {
   console.error(err);
   saveData();
@@ -165,7 +157,7 @@ function getLuck(level, rebirths) {
   return Math.pow(1.2, level - 1) * Math.pow(2, rebirths);
 }
 
-// -------------------- DICE DROPS (NOT BOOSTED) --------------------
+// -------------------- DICE DROPS --------------------
 function giveDice(user) {
   const r = Math.random();
 
@@ -242,8 +234,8 @@ function roll(luck) {
 client.on("messageCreate", async (message) => {
   if (message.author.bot || !message.guild) return;
 
-  // 🔒 channel lock
-  if (message.channel.id !== ALLOWED_CHANNEL_ID) return;
+  // 🔒 CHANNEL LOCK
+  if (message.channel.id !== channelId) return;
 
   const user = getUser(message.member.id);
 
@@ -307,7 +299,7 @@ client.on("messageCreate", async (message) => {
     );
   }
 
-  // ---------------- USE DICE ----------------
+  // ---------------- USE ----------------
   if (message.content.startsWith("?use")) {
 
     const input = message.content.slice(4).trim().toLowerCase();
