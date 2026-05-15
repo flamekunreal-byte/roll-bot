@@ -197,11 +197,12 @@ client.on("messageCreate", async (msg) => {
         value: `🎲 You found: **${dice}**`
       });
 
-    if (leveled)
-      embed.addFields({
-        name: "⬆️ Level Up",
-        value: "🎉 You leveled up!"
-      });
+   if (leveled) {
+  embed.addFields({
+    name: "⬆️ Level Up!",
+    value: "⠀"
+  });
+}
 
     return msg.reply({ embeds: [embed] });
   }
