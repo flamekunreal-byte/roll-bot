@@ -20,6 +20,45 @@ let userData = {};
 let pendingRebirth = {};
 let activeBoost = {};
 
+// ---------------- ROLE REWARDS ----------------
+const roleRewards = {
+  "Part I": "1504750381539004477",
+  "Part II": "1504750412132253807",
+  "Part III": "1504750442029256714",
+
+  "Reset I": "1504750482449764422",
+  "Reset II": "1504750515613995089",
+  "Reset III": "1504750540892934164",
+
+  "Gold Part I": "1504750609285386280",
+  "Gold Part II": "1504750658157281451",
+  "Gold Part III": "1504750678961033257",
+
+  "Rainbow Part I": "1504750984553824326",
+  "Rainbow Part II": "1504751068242771968",
+  "Rainbow Part III": "1504751085980745759",
+
+  "Dark Part I": "1504751136815579246",
+  "Dark Part II": "1504751199168237709",
+  "Dark Part III": "1504751221884452895",
+
+  "Tier I": "1504751280554246247",
+  "Tier II": "1504751329808220180",
+  "Tier III": "1504751354156027915",
+
+  "Automation I": "1504751406589153372",
+  "Automation II": "1504751456388124732",
+  "Automation III": "1504751471957114980",
+
+  "Deep Research I": "1504751515599114240",
+  "Deep Research II": "1504751560356528269",
+  "Deep Research III": "1504751581336440972",
+
+  "Everything I": "1504751610167951470",
+  "Everything II": "1504751729076473966",
+  "Everything III": "1504751748986962030"
+};
+
 // ---------------- SAVE / LOAD ----------------
 function loadData() {
   if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, "{}");
@@ -135,12 +174,23 @@ function roll(luck) {
   );
 }
 
+// ---------------- EFFECT HELPERS ----------------
+function getRarityEffect(name) {
+  const value = points[name] || 0;
+
+  if (value >= 7500) return { color: 0xFF00FF, title: "🌌 MYTHIC DROP!" };
+  if (value >= 2500) return { color: 0xFF4500, title: "🔥 LEGENDARY DROP!" };
+  if (value >= 1000) return { color: 0x00FFFF, title: "⚡ EPIC DROP!" };
+  if (value >= 500) return { color: 0xFFD700, title: "✨ RARE DROP!" };
+  if (value >= 100) return { color: 0x00FF00, title: "💠 UNCOMMON DROP!" };
+  return { color: COLOR, title: "🎲 Roll Result" };
+}
+
 // ---------------- BOT ----------------
 client.on("messageCreate", async (msg) => {
   if (!msg.guild || msg.author.bot) return;
 
   const isAdmin = msg.member?.permissions?.has(PermissionFlagsBits.Administrator);
-
   if (msg.channel.id !== CHANNEL_ID && !isAdmin) return;
 
   const u = getUser(msg.author.id);
@@ -155,7 +205,6 @@ client.on("messageCreate", async (msg) => {
     const r = roll(luck);
 
     u.rolls++;
-
     const xpGain = points[r.name] || 1;
     u.xp += xpGain;
 
@@ -173,12 +222,15 @@ client.on("messageCreate", async (msg) => {
     }
 
     const dice = giveDice(u);
-
     saveData();
 
+    // ---------- EFFECTS ----------
+    const effect = getRarityEffect(r.name);
+
     const embed = new EmbedBuilder()
-      .setColor(COLOR)
-      .setTitle("🎲 Roll Result")
+      .setColor(effect.color)
+      .setTitle(effect.title)
+      .setDescription("Rolling the dice...")
       .addFields(
         { name: "✨ Rarity", value: `🎲 **${r.name}** ︱ ${r.display}` },
         { name: "📊 Progress", value: `⭐ Level: **${u.level}** ︱ 📈 ${u.xp}/${xpNeeded(u.level)} ︱ ➕ +${xpGain} XP` },
@@ -186,10 +238,30 @@ client.on("messageCreate", async (msg) => {
       );
 
     if (dice) embed.addFields({ name: "🎁 Dice Drop", value: dice });
+    if (leveled) embed.addFields({ name: "⬆️ Level Up!", value: "LEVEL UP!" });
 
-    if (leveled) embed.addFields({ name: "⬆️ Level Up!", value: "Leveled up!" });
+    // ---------- “ANIMATION FEEL” ----------
+    const sent = await msg.reply({ embeds: [embed] });
 
-    return msg.reply({ embeds: [embed] });
+    if (points[r.name] >= 1000) {
+      setTimeout(() => {
+        sent.edit({
+          embeds: [
+            embed.setDescription("✨ THE RESULT HAS BEEN REVEALED ✨")
+          ]
+        });
+      }, 1200);
+    }
+
+    // ROLE REWARD GIVE (FIXED FEATURE)
+    const roleId = roleRewards[r.name];
+    if (roleId) {
+      try {
+        await msg.member.roles.add(roleId);
+      } catch (e) {}
+    }
+
+    return;
   }
 
   // ================= PROFILE =================
@@ -315,6 +387,7 @@ client.on("messageCreate", async (msg) => {
     return msg.reply("Updated");
   }
 
+  // ================= GIVE / REMOVE DICE =================
   if (msg.content.startsWith("?give dice") && isAdmin) {
     const args = msg.content.split(" ");
     const user = msg.mentions.users.first();
