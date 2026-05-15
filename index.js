@@ -12,6 +12,7 @@ const client = new Client({
 
 const DATA_FILE = "./data.json";
 
+// -------------------- DATA --------------------
 let userData = {};
 if (fs.existsSync(DATA_FILE)) {
   userData = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
@@ -21,46 +22,7 @@ function saveData() {
   fs.writeFileSync(DATA_FILE, JSON.stringify(userData, null, 2));
 }
 
-/* ===================== ROLES ===================== */
-const roles = {
-  "Part I": "1504750381539004477",
-  "Part II": "1504750412132253807",
-  "Part III": "1504750442029256714",
-
-  "Reset I": "1504750482449764422",
-  "Reset II": "1504750515613995089",
-  "Reset III": "1504750540892934164",
-
-  "Gold Part I": "1504750609285386280",
-  "Gold Part II": "1504750658157281451",
-  "Gold Part III": "1504750678961033257",
-
-  "Rainbow Part I": "1504750984553824326",
-  "Rainbow Part II": "1504751068242771968",
-  "Rainbow Part III": "1504751085980745759",
-
-  "Dark Part I": "1504751136815579246",
-  "Dark Part II": "1504751199168237709",
-  "Dark Part III": "1504751221884452895",
-
-  "Tier I": "1504751280554246247",
-  "Tier II": "1504751329808220180",
-  "Tier III": "1504751354156027915",
-
-  "Automation I": "1504751406589153372",
-  "Automation II": "1504751456388124732",
-  "Automation III": "1504751471957114980",
-
-  "Deep Research I": "1504751515599114240",
-  "Deep Research II": "1504751560356528269",
-  "Deep Research III": "1504751581336440972",
-
-  "Everything I": "1504751610167951470",
-  "Everything II": "1504751729076473966",
-  "Everything III": "1504751748986962030"
-};
-
-/* ===================== POINTS ===================== */
+// -------------------- POINT VALUES --------------------
 const points = {
   "Part I": 1,
   "Part II": 2,
@@ -99,70 +61,117 @@ const points = {
   "Everything III": 10000
 };
 
-/* ===================== ROLL ===================== */
-function roll() {
-  const r = Math.random();
+// -------------------- ROLES --------------------
+const roles = {
+  "Part I": "1504750381539004477",
+  "Part II": "1504750412132253807",
+  "Part III": "1504750442029256714",
 
-  if (r < 1 / 100000000) return ["Everything III", "1/100,000,000"];
-  if (r < 1 / 10000000) return ["Everything II", "1/10,000,000"];
-  if (r < 1 / 5000000) return ["Everything I", "1/5,000,000"];
+  "Reset I": "1504750482449764422",
+  "Reset II": "1504750515613995089",
+  "Reset III": "1504750540892934164",
 
-  if (r < 1 / 2000000) return ["Deep Research III", "1/2,000,000"];
-  if (r < 1 / 1000000) return ["Deep Research II", "1/1,000,000"];
-  if (r < 1 / 750000) return ["Deep Research I", "1/750,000"];
+  "Gold Part I": "1504750609285386280",
+  "Gold Part II": "1504750658157281451",
+  "Gold Part III": "1504750678961033257",
 
-  if (r < 1 / 500000) return ["Automation III", "1/500,000"];
-  if (r < 1 / 250000) return ["Automation II", "1/250,000"];
-  if (r < 1 / 150000) return ["Automation I", "1/150,000"];
+  "Rainbow Part I": "1504750984553824326",
+  "Rainbow Part II": "1504751068242771968",
+  "Rainbow Part III": "1504751085980745759",
 
-  if (r < 1 / 100000) return ["Tier III", "1/100,000"];
-  if (r < 1 / 75000) return ["Tier II", "1/75,000"];
-  if (r < 1 / 50000) return ["Tier I", "1/50,000"];
+  "Dark Part I": "1504751136815579246",
+  "Dark Part II": "1504751199168237709",
+  "Dark Part III": "1504751221884452895",
 
-  if (r < 1 / 30000) return ["Dark Part III", "1/30,000"];
-  if (r < 1 / 15000) return ["Dark Part II", "1/15,000"];
-  if (r < 1 / 7000) return ["Dark Part I", "1/7,000"];
+  "Tier I": "1504751280554246247",
+  "Tier II": "1504751329808220180",
+  "Tier III": "1504751354156027915",
 
-  if (r < 1 / 4000) return ["Rainbow Part III", "1/4,000"];
-  if (r < 1 / 2000) return ["Rainbow Part II", "1/2,000"];
-  if (r < 1 / 1000) return ["Rainbow Part I", "1/1,000"];
+  "Automation I": "1504751406589153372",
+  "Automation II": "1504751456388124732",
+  "Automation III": "1504751471957114980",
 
-  if (r < 1 / 600) return ["Gold Part III", "1/600"];
-  if (r < 1 / 300) return ["Gold Part II", "1/300"];
-  if (r < 1 / 150) return ["Gold Part I", "1/150"];
+  "Deep Research I": "1504751515599114240",
+  "Deep Research II": "1504751560356528269",
+  "Deep Research III": "1504751581336440972",
 
-  if (r < 1 / 75) return ["Reset III", "1/75"];
-  if (r < 1 / 40) return ["Reset II", "1/40"];
-  if (r < 1 / 20) return ["Reset I", "1/20"];
+  "Everything I": "1504751610167951470",
+  "Everything II": "1504751729076473966",
+  "Everything III": "1504751748986962030"
+};
 
-  if (r < 1 / 10) return ["Part III", "1/10"];
-  if (r < 1 / 6) return ["Part II", "1/6"];
-
-  return ["Part I", "1/3"];
-}
-
-/* ===================== USER ===================== */
-function getUser(id) {
-  if (!userData[id]) {
-    userData[id] = {
-      points: 0,
-      level: 0,
+// -------------------- LEVEL SYSTEM --------------------
+function getUser(memberId) {
+  if (!userData[memberId]) {
+    userData[memberId] = {
+      xp: 0,
+      level: 1,
       owned: []
     };
   }
-  return userData[id];
+  return userData[memberId];
 }
 
-/* ===================== LEVEL SYSTEM ===================== */
-function levelCost(level) {
-  return Math.floor(5 * Math.pow(1.5, level));
+function xpNeeded(level) {
+  return Math.floor(5 * Math.pow(1.5, level - 1));
 }
 
-function luck(level) {
-  return Math.pow(1.2, level);
+// -------------------- LUCK SYSTEM --------------------
+function getLuck(level) {
+  return Math.pow(1.2, level - 1);
 }
 
-/* ===================== BOT ===================== */
+// -------------------- ROLL SYSTEM (FIXED) --------------------
+function roll(luck) {
+  const r = Math.random();
+
+  const check = (chance, name) => {
+    if (r < chance * luck) return name;
+    return null;
+  };
+
+  // EVERYTHING
+  return (
+    check(1 / 100000000, "Everything III") ||
+    check(1 / 10000000, "Everything II") ||
+    check(1 / 5000000, "Everything I") ||
+
+    check(1 / 2000000, "Deep Research III") ||
+    check(1 / 1000000, "Deep Research II") ||
+    check(1 / 750000, "Deep Research I") ||
+
+    check(1 / 500000, "Automation III") ||
+    check(1 / 250000, "Automation II") ||
+    check(1 / 150000, "Automation I") ||
+
+    check(1 / 100000, "Tier III") ||
+    check(1 / 75000, "Tier II") ||
+    check(1 / 50000, "Tier I") ||
+
+    check(1 / 30000, "Dark Part III") ||
+    check(1 / 15000, "Dark Part II") ||
+    check(1 / 7000, "Dark Part I") ||
+
+    check(1 / 4000, "Rainbow Part III") ||
+    check(1 / 2000, "Rainbow Part II") ||
+    check(1 / 1000, "Rainbow Part I") ||
+
+    check(1 / 600, "Gold Part III") ||
+    check(1 / 300, "Gold Part II") ||
+    check(1 / 150, "Gold Part I") ||
+
+    check(1 / 75, "Reset III") ||
+    check(1 / 40, "Reset II") ||
+    check(1 / 20, "Reset I") ||
+
+    check(1 / 10, "Part III") ||
+    check(1 / 6, "Part II") ||
+
+    "Part I"
+  );
+}
+
+// -------------------- BOT --------------------
 client.on("ready", () => {
   console.log(`Logged in as ${client.user.tag}`);
 });
@@ -170,68 +179,56 @@ client.on("ready", () => {
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   if (message.channel.id !== process.env.CHANNEL_ID) return;
-
-  const user = getUser(message.author.id);
-
-  /* ===== CHECK LEVEL ===== */
-  if (message.content === "?level") {
-    return message.reply(
-      `📊 Level: **${user.level}**\n` +
-      `💰 Points: **${user.points}**\n` +
-      `⬆️ Next Level Cost: **${levelCost(user.level)}**\n` +
-      `✨ Luck: x${luck(user.level).toFixed(2)}`
-    );
-  }
-
-  /* ===== LEVEL UP ===== */
-  if (message.content === "?levelup") {
-    const cost = levelCost(user.level);
-
-    if (user.points < cost) {
-      return message.reply(`❌ You need **${cost} points** to level up.`);
-    }
-
-    user.points -= cost;
-    user.level++;
-
-    saveData();
-
-    return message.reply(
-      `⬆️ Level Up! You are now level **${user.level}**\n✨ Luck: x${luck(user.level).toFixed(2)}`
-    );
-  }
-
-  /* ===== ROLL ===== */
   if (message.content !== "?roll") return;
 
-  const [rarity, chance] = roll();
+  const user = getUser(message.member.id);
+
+  const luck = getLuck(user.level);
+
+  const rarity = roll(luck);
+
+  // XP gain
+  const gained = points[rarity] || 1;
+  user.xp += gained;
+
+  // LEVEL UP LOOP
+  let leveledUp = false;
+
+  while (user.xp >= xpNeeded(user.level)) {
+    user.xp -= xpNeeded(user.level);
+    user.level += 1;
+    leveledUp = true;
+  }
 
   const roleId = roles[rarity];
-  const basePoints = points[rarity] || 0;
 
-  const earned = Math.floor(basePoints * luck(user.level));
-
-  user.points += earned;
+  if (roleId && !message.member.roles.cache.has(roleId)) {
+    await message.member.roles.add(roleId);
+  }
 
   if (!user.owned.includes(rarity)) {
     user.owned.push(rarity);
   }
 
-  try {
-    if (roleId && !message.member.roles.cache.has(roleId)) {
-      await message.member.roles.add(roleId);
-    }
-  } catch (e) {
-    console.log("Role error:", e);
-  }
-
   saveData();
 
-  message.reply(
-    `🎲 You got **${rarity}** (1/${chance})\n` +
-    `⭐ +${earned} points\n` +
-    `📊 Level: ${user.level} | Luck x${luck(user.level).toFixed(2)}`
-  );
+  const nextReq = xpNeeded(user.level);
+
+  let reply =
+`🎲 You got: **${rarity}**
+⭐ Level: **${user.level}**
+📊 XP: **${user.xp}/${nextReq}**
+🍀 Luck: x${luck.toFixed(2)}`;
+
+  if (leveledUp) {
+    reply += `\n⬆️ You leveled up!`;
+  }
+
+  if (!user.owned.includes(rarity)) {
+    reply += `\n🎉 You've been awarded with a new role`;
+  }
+
+  message.reply(reply);
 });
 
 client.login(process.env.TOKEN);
