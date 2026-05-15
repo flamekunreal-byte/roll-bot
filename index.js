@@ -478,19 +478,100 @@ XP: ${u.xp}/${xpNeeded(u.level)}
       return msg.reply("✅ Rebirth complete");
     }
 
-      // ================= ADMIN =================
-    if (isAdmin) {
-      if (msg.content.startsWith("?setrolls")) {
-        const user = msg.mentions.users.first();
-        const amt = parseInt(msg.content.split(" ")[2]);
+   // ================= ADMIN =================
+if (isAdmin) {
 
-        getUser(user.id).rolls = amt;
+  // SET ROLLS
+  if (msg.content.startsWith("?setrolls")) {
 
-        saveData();
+    const user = msg.mentions.users.first();
+    const amt = parseInt(msg.content.split(" ")[2]);
 
-        return msg.reply("done");
-      }
-    }
+    if (!user || isNaN(amt))
+      return msg.reply("Usage: ?setrolls @user amount");
+
+    getUser(user.id).rolls = amt;
+
+    saveData();
+
+    return msg.reply("✅ Rolls updated");
+  }
+
+  // SET LEVEL
+  if (msg.content.startsWith("?setlevel")) {
+
+    const user = msg.mentions.users.first();
+    const amt = parseInt(msg.content.split(" ")[2]);
+
+    if (!user || isNaN(amt))
+      return msg.reply("Usage: ?setlevel @user amount");
+
+    getUser(user.id).level = amt;
+
+    saveData();
+
+    return msg.reply("✅ Level updated");
+  }
+
+  // SET REBIRTHS
+  if (msg.content.startsWith("?setrebirth")) {
+
+    const user = msg.mentions.users.first();
+    const amt = parseInt(msg.content.split(" ")[2]);
+
+    if (!user || isNaN(amt))
+      return msg.reply("Usage: ?setrebirth @user amount");
+
+    getUser(user.id).rebirths = amt;
+
+    saveData();
+
+    return msg.reply("✅ Rebirths updated");
+  }
+
+  // GIVE ITEM
+  if (msg.content.startsWith("?giveitem")) {
+
+    const args = msg.content.split(" ");
+
+    const user = msg.mentions.users.first();
+
+    const item = args.slice(2, -1).join(" ");
+
+    const amt = parseInt(args[args.length - 1]);
+
+    if (!user || !item || isNaN(amt))
+      return msg.reply(
+        "Usage: ?giveitem @user item amount"
+      );
+
+    const p = getUser(user.id);
+
+    if (!p.inventory[item])
+      p.inventory[item] = 0;
+
+    p.inventory[item] += amt;
+
+    saveData();
+
+    return msg.reply(`✅ Gave ${amt} ${item}`);
+  }
+
+  // RESET USER
+  if (msg.content.startsWith("?resetuser")) {
+
+    const user = msg.mentions.users.first();
+
+    if (!user)
+      return msg.reply("Usage: ?resetuser @user");
+
+    delete userData[user.id];
+
+    saveData();
+
+    return msg.reply("✅ User reset");
+  }
+}
 
     // ================= RAREST LEADERBOARD =================
     if (msg.content === "?leaderboard") {
