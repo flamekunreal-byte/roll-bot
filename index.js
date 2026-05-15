@@ -478,7 +478,7 @@ XP: ${u.xp}/${xpNeeded(u.level)}
       return msg.reply("✅ Rebirth complete");
     }
 
-    // ================= ADMIN =================
+      // ================= ADMIN =================
     if (isAdmin) {
       if (msg.content.startsWith("?setrolls")) {
         const user = msg.mentions.users.first();
@@ -492,11 +492,6 @@ XP: ${u.xp}/${xpNeeded(u.level)}
       }
     }
 
-  } catch (err) {
-    console.error(err);
-    msg.reply("An error occurred.");
-  }
-});
     // ================= RAREST LEADERBOARD =================
     if (msg.content === "?leaderboard") {
 
