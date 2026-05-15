@@ -489,3 +489,4 @@ if (msg.content === "?leaderboard") {
 }
 
 client.login(process.env.TOKEN);
+});
