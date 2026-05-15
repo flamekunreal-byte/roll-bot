@@ -287,13 +287,14 @@ function startAutoroll(id) {
 
 saveData();
 
-      }, speed);
+}, speed);
 }
 
-// ================= AUTOROLL SUMMARY ON MANUAL ROLL =================
-if (autorollLogs[id] && autorollLogs[id].length > 0) {
+// ================= AUTOROLL SUMMARY =================
+const logs = autorollLogs[id];
 
-  const logs = autorollLogs[id];
+if (logs && logs.length > 0) {
+
   autorollLogs[id] = [];
 
   let totalRolls = logs.length;
@@ -305,7 +306,10 @@ if (autorollLogs[id] && autorollLogs[id].length > 0) {
     pointsGained += r.gain || 0;
     totalLevels += r.levels || 0;
 
-    if (!highest || (points[r.name] || 0) > (points[highest.name] || 0)) {
+    if (
+      !highest ||
+      (points[r.name] || 0) > (points[highest.name] || 0)
+    ) {
       highest = r;
     }
   }
@@ -317,10 +321,28 @@ if (autorollLogs[id] && autorollLogs[id].length > 0) {
       .setColor(0xFFDE10)
       .setTitle("⏳ Auto Roll Summary")
       .addFields(
-        { name: "🎲 Times Rolled", value: `${totalRolls}`, inline: true },
-        { name: "💎 Rarest Roll", value: highest ? `${highest.name} (${highest.display})` : "None", inline: true },
-        { name: "📈 Points Gained", value: `${pointsGained.toLocaleString()}`, inline: true },
-        { name: "⭐ Levels Gained", value: `${totalLevels}`, inline: true }
+        {
+          name: "🎲 Times Rolled",
+          value: `${totalRolls}`,
+          inline: true
+        },
+        {
+          name: "💎 Rarest Roll",
+          value: highest
+            ? `${highest.name} (${highest.display})`
+            : "None",
+          inline: true
+        },
+        {
+          name: "📈 Points Gained",
+          value: `${pointsGained.toLocaleString()}`,
+          inline: true
+        },
+        {
+          name: "⭐ Levels Gained",
+          value: `${totalLevels}`,
+          inline: true
+        }
       )
       .setFooter({ text: "Autoroll System" })
       .setTimestamp();
@@ -328,7 +350,6 @@ if (autorollLogs[id] && autorollLogs[id].length > 0) {
     channel.send({ embeds: [embed] }).catch(() => {});
   }
 }
-
 
 // ================= BOT =================
 client.on("messageCreate", async (msg) => {
