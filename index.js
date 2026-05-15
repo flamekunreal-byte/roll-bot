@@ -120,20 +120,24 @@ client.on("messageCreate", async (message) => {
 
   const roleId = roles[result];
 
-  // always give role
-  if (roleId && !member.roles.cache.has(roleId)) {
-    await member.roles.add(roleId);
+  // try to give role safely
+  try {
+    if (roleId && !member.roles.cache.has(roleId)) {
+      await member.roles.add(roleId);
+    }
+  } catch (err) {
+    console.log("Role error:", err);
   }
 
-  // ONLY announce if it's new
+  let reply = `🎲 You got: **${result}**`;
+
   if (!alreadyOwned) {
     userData[member.id].push(result);
     saveData();
-
-    return message.reply("🎉 You have been awarded with a new role");
+    reply += `\n🎉 You have been awarded with a new role`;
   }
 
-  // no message if already owned
+  await message.reply(reply);
 });
 
 client.login(process.env.TOKEN);
