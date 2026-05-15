@@ -11,8 +11,8 @@ const client = new Client({
   allowedMentions: { parse: [] }
 });
 
-// 🔒 USE YOUR EXISTING CHANNEL VARIABLE HERE
-const channelId = YOUR_CHANNEL_ID; // <-- replace with your existing variable
+// 🔒 YOUR EXISTING VARIABLE (IMPORTANT)
+const channelId = CHANNEL_ID;
 
 // -------------------- DATA --------------------
 const DATA_FILE = "./data.json";
@@ -157,7 +157,7 @@ function getLuck(level, rebirths) {
   return Math.pow(1.2, level - 1) * Math.pow(2, rebirths);
 }
 
-// -------------------- DICE DROPS --------------------
+// -------------------- DICE DROP (NOT BOOSTED) --------------------
 function giveDice(user) {
   const r = Math.random();
 
@@ -234,7 +234,7 @@ function roll(luck) {
 client.on("messageCreate", async (message) => {
   if (message.author.bot || !message.guild) return;
 
-  // 🔒 CHANNEL LOCK
+  // 🔒 CHANNEL LOCK (USING YOUR VARIABLE)
   if (message.channel.id !== channelId) return;
 
   const user = getUser(message.member.id);
