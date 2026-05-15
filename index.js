@@ -287,92 +287,43 @@ function startAutoroll(id) {
 
 saveData();
 
-    // ================= SUMMARY =================
-    const now = Date.now();
+// ================= AUTOROLL SUMMARY ON MANUAL ROLL =================
+if (autorollLogs[id] && autorollLogs[id].length > 0) {
 
-    if (!lastSeen[id]) {
-      lastSeen[id] = now;
+  const logs = autorollLogs[id];
+  autorollLogs[id] = [];
+
+  let totalRolls = logs.length;
+  let pointsGained = 0;
+  let totalLevels = 0;
+  let highest = null;
+
+  for (const r of logs) {
+    pointsGained += r.gain || 0;
+    totalLevels += r.levels || 0;
+
+    if (!highest || (points[r.name] || 0) > (points[highest.name] || 0)) {
+      highest = r;
     }
+  }
 
-    if (
-      autorollLogs[id]?.length &&
-      now - lastSeen[id] >= 60000
-    ) {
+  const channel = client.channels.cache.get(CHANNEL_ID);
 
-      const logs = autorollLogs[id];
+  if (channel) {
+    const embed = new EmbedBuilder()
+      .setColor(0xFFDE10)
+      .setTitle("⏳ Auto Roll Summary")
+      .addFields(
+        { name: "🎲 Times Rolled", value: `${totalRolls}`, inline: true },
+        { name: "💎 Rarest Roll", value: highest ? `${highest.name} (${highest.display})` : "None", inline: true },
+        { name: "📈 Points Gained", value: `${pointsGained.toLocaleString()}`, inline: true },
+        { name: "⭐ Levels Gained", value: `${totalLevels}`, inline: true }
+      )
+      .setFooter({ text: "Autoroll System" })
+      .setTimestamp();
 
-      autorollLogs[id] = [];
-
-      let totalRolls = logs.length;
-
-      let pointsGained = 0;
-
-      let totalLevels = 0;
-
-      let highest = null;
-
-      for (const r of logs) {
-
-        pointsGained += r.gain || 0;
-
-        totalLevels += r.levels || 0;
-
-        if (
-          !highest ||
-          (points[r.name] || 0) >
-          (points[highest.name] || 0)
-        ) {
-          highest = r;
-        }
-      }
-
-      const channel =
-        client.channels.cache.get(CHANNEL_ID);
-
-      if (channel) {
-
-        const embed = new EmbedBuilder()
-          .setColor(0xFFDE10)
-          .setTitle("⏳ Roll Summary")
-          .addFields(
-            {
-              name: "🎲 Times Rolled",
-              value: `${totalRolls}`,
-              inline: true
-            },
-            {
-              name: "💎 Rarest Roll",
-              value: highest
-                ? `${highest.name} (${highest.display})`
-                : "None",
-              inline: true
-            },
-            {
-              name: "📈 Points Gained",
-              value: `${pointsGained.toLocaleString()}`,
-              inline: true
-            },
-            {
-              name: "⭐ Leveled Up",
-              value: `${totalLevels} times`,
-              inline: true
-            }
-          )
-          .setFooter({
-            text: "Autoroll System"
-          })
-          .setTimestamp();
-
-        channel.send({
-          embeds: [embed]
-        }).catch(() => {});
-      }
-
-      lastSeen[id] = now;
-    }
-
-  }, speed);
-
+    channel.send({ embeds: [embed] }).catch(() => {});
+  }
 }
 
 
