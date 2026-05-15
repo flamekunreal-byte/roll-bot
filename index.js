@@ -12,7 +12,7 @@ const client = new Client({
 });
 
 // 🔒 YOUR EXISTING VARIABLE (IMPORTANT)
-const channelId = 1504547166088069181;
+const channelId = "1504547166088069181";
 
 // -------------------- DATA --------------------
 const DATA_FILE = "./data.json";
