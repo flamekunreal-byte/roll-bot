@@ -283,29 +283,42 @@ client.on("messageCreate", async (message) => {
 🌌 Cosmic Lucky Dice: ${inv["Cosmic Lucky Dice"]}`
     );
   }
+// ---------------- USE DICE ----------------
+if (message.content.toLowerCase().startsWith("?use")) {
 
-  // ---------------- USE DICE ----------------
-  if (message.content.startsWith("?use")) {
-    const name = message.content.slice(5).trim();
+  const raw = message.content.slice(4).trim().toLowerCase();
 
-    const boosts = {
-      "Lucky Dice": 5,
-      "Golden Lucky Dice": 25,
-      "Diamond Lucky Dice": 100,
-      "Cosmic Lucky Dice": 1000
-    };
+  const normalize = (str) => str.toLowerCase();
 
-    if (!boosts[name]) return message.reply("❌ Invalid item.");
-    if (user.inventory[name] <= 0) return message.reply("❌ You don't have this item.");
+  const boosts = {
+    "lucky dice": 5,
+    "golden lucky dice": 25,
+    "diamond lucky dice": 100,
+    "cosmic lucky dice": 1000
+  };
 
-    user.inventory[name]--;
-    activeBoost[message.member.id] = boosts[name];
+  // match ignoring emojis and weird formatting
+  const matchKey = Object.keys(boosts).find(k =>
+    normalize(k) === raw
+  );
 
-    saveData();
-
-    return message.reply(`⚡ Used **${name}** → Next roll x${boosts[name]} luck!`);
+  if (!matchKey) {
+    return message.reply("❌ Invalid item. Use: ?use Lucky Dice");
   }
 
+  if (user.inventory[matchKey] <= 0) {
+    return message.reply("❌ You don't have this item.");
+  }
+
+  user.inventory[matchKey]--;
+  activeBoost[message.member.id] = boosts[matchKey];
+
+  saveData();
+
+  return message.reply(
+    `⚡ Used **${matchKey}** → Next roll x${boosts[matchKey]} luck!`
+  );
+}
   // ---------------- REBIRTH ----------------
   if (message.content === "?rebirth") {
     const required = Math.floor(1000 * Math.pow(2.5, user.rebirths));
