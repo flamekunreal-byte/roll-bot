@@ -552,4 +552,6 @@ return msg.reply({
       .setFooter({ text: "RNG Leaderboard System" })
   ]
 });
+
+    
 client.login(process.env.TOKEN);
