@@ -70,7 +70,6 @@ function saveData() {
 }
 
 loadData();
-
 process.on("exit", saveData);
 process.on("SIGINT", () => { saveData(); process.exit(); });
 
@@ -174,7 +173,7 @@ function roll(luck) {
   );
 }
 
-// ---------------- EFFECT HELPERS ----------------
+// ---------------- EFFECTS ----------------
 function getRarityEffect(name) {
   const value = points[name] || 0;
 
@@ -202,6 +201,16 @@ client.on("messageCreate", async (msg) => {
     delete activeBoost[msg.author.id];
 
     const luck = getLuck(u.level, u.rebirths) * boost;
+
+    // ANIMATION (combined system)
+    let anim = await msg.reply("🎲 Rolling...");
+    const frames = ["🎲", "🎲.", "🎲..", "🎲..."];
+
+    for (const f of frames) {
+      await new Promise(r => setTimeout(r, 400));
+      await anim.edit(f);
+    }
+
     const r = roll(luck);
 
     u.rolls++;
@@ -224,41 +233,35 @@ client.on("messageCreate", async (msg) => {
     const dice = giveDice(u);
     saveData();
 
-    // ---------- EFFECTS ----------
     const effect = getRarityEffect(r.name);
 
     const embed = new EmbedBuilder()
       .setColor(effect.color)
       .setTitle(effect.title)
-      .setDescription("Rolling the dice...")
       .addFields(
         { name: "✨ Rarity", value: `🎲 **${r.name}** ︱ ${r.display}` },
-        { name: "📊 Progress", value: `⭐ Level: **${u.level}** ︱ 📈 ${u.xp}/${xpNeeded(u.level)} ︱ ➕ +${xpGain} XP` },
-        { name: "⚡ Stats", value: `🔁 Rolls: **${u.rolls}** ︱ 🍀 Luck: **x${luck.toFixed(2)}**` }
+        { name: "📊 Level", value: `⭐ ${u.level} | XP ${u.xp}/${xpNeeded(u.level)} | +${xpGain}` },
+        { name: "⚡ Stats", value: `🔁 Rolls ${u.rolls} | 🍀 x${luck.toFixed(2)}` }
       );
 
     if (dice) embed.addFields({ name: "🎁 Dice Drop", value: dice });
     if (leveled) embed.addFields({ name: "⬆️ Level Up!", value: "LEVEL UP!" });
 
-    // ---------- “ANIMATION FEEL” ----------
-    const sent = await msg.reply({ embeds: [embed] });
+    await anim.edit({ content: "", embeds: [embed] });
 
+    // HIGH RARITY ANIMATION (merged)
     if (points[r.name] >= 1000) {
-      setTimeout(() => {
-        sent.edit({
-          embeds: [
-            embed.setDescription("✨ THE RESULT HAS BEEN REVEALED ✨")
-          ]
-        });
-      }, 1200);
+      await new Promise(r => setTimeout(r, 900));
+      await anim.edit({ embeds: [embed.setDescription("⚡ HIGH RARITY...")] });
+
+      await new Promise(r => setTimeout(r, 900));
+      await anim.edit({ embeds: [embed.setDescription("🌌 FINAL RESULT")] });
     }
 
-    // ROLE REWARD GIVE (FIXED FEATURE)
+    // ROLE REWARD
     const roleId = roleRewards[r.name];
     if (roleId) {
-      try {
-        await msg.member.roles.add(roleId);
-      } catch (e) {}
+      try { await msg.member.roles.add(roleId); } catch {}
     }
 
     return;
@@ -424,34 +427,12 @@ client.on("messageCreate", async (msg) => {
   if (msg.content === "?leaderboard") {
     const entries = Object.entries(userData);
 
-    const getName = (id) => {
-      const m = msg.guild.members.cache.get(id);
-      return m?.displayName || m?.user?.username || "Unknown";
-    };
+    const getName = (id) => msg.guild.members.cache.get(id)?.displayName || "Unknown";
 
-    const topRolls = entries
-      .sort((a,b)=>b[1].rolls-a[1].rolls)
-      .slice(0,5)
-      .map((x,i)=>`${i+1}. ${getName(x[0])} - ${x[1].rolls}`)
-      .join("\n");
-
-    const topLevels = entries
-      .sort((a,b)=>b[1].level-a[1].level)
-      .slice(0,5)
-      .map((x,i)=>`${i+1}. ${getName(x[0])} - ${x[1].level}`)
-      .join("\n");
-
-    const topRebirths = entries
-      .sort((a,b)=>b[1].rebirths-a[1].rebirths)
-      .slice(0,5)
-      .map((x,i)=>`${i+1}. ${getName(x[0])} - ${x[1].rebirths}`)
-      .join("\n");
-
-    const topRare = entries
-      .sort((a,b)=> (b[1].owned?.[b[1].rarest]||0) - (a[1].owned?.[a[1].rarest]||0))
-      .slice(0,5)
-      .map((x,i)=>`${i+1}. ${getName(x[0])} - ${x[1].rarest || "None"}`)
-      .join("\n");
+    const topRolls = entries.sort((a,b)=>b[1].rolls-a[1].rolls).slice(0,5).map((x,i)=>`${i+1}. ${getName(x[0])} - ${x[1].rolls}`).join("\n");
+    const topLevels = entries.sort((a,b)=>b[1].level-a[1].level).slice(0,5).map((x,i)=>`${i+1}. ${getName(x[0])} - ${x[1].level}`).join("\n");
+    const topRebirths = entries.sort((a,b)=>b[1].rebirths-a[1].rebirths).slice(0,5).map((x,i)=>`${i+1}. ${getName(x[0])} - ${x[1].rebirths}`).join("\n");
+    const topRare = entries.sort((a,b)=>(b[1].owned?.[b[1].rarest]||0)-(a[1].owned?.[a[1].rarest]||0)).slice(0,5).map((x,i)=>`${i+1}. ${getName(x[0])} - ${x[1].rarest || "None"}`).join("\n");
 
     return msg.reply({
       embeds: [
