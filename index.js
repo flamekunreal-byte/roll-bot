@@ -18,8 +18,8 @@ const client = new Client({
 let userData = {};
 let pendingRebirth = {};
 let activeBoost = {};
-let autorollLogs = {};
 let autorollIntervals = {};
+let autorollLogs = {};
 let lastSeen = {};
 
 // ================= ROLE REWARDS =================
@@ -58,9 +58,11 @@ function loadData() {
   if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, "{}");
   userData = JSON.parse(fs.readFileSync(DATA_FILE, "utf8") || "{}");
 }
+
 function saveData() {
   fs.writeFileSync(DATA_FILE, JSON.stringify(userData, null, 2));
 }
+
 loadData();
 
 // ================= USER =================
@@ -84,9 +86,15 @@ function getUser(id) {
   return userData[id];
 }
 
-// ================= XP / LUCK =================
-const xpNeeded = (l) => Math.floor(5 * Math.pow(1.5, l - 1));
-const getLuck = (l, r) => Math.pow(1.2, l - 1) * Math.pow(2, r);
+// ================= XP =================
+function xpNeeded(lv) {
+  return Math.floor(5 * Math.pow(1.5, lv - 1));
+}
+
+// ================= LUCK =================
+function getLuck(level, rebirths) {
+  return Math.pow(1.2, level - 1) * Math.pow(2, rebirths);
+}
 
 // ================= POINTS =================
 const points = {
@@ -101,14 +109,15 @@ const points = {
   "Everything I": 5000,"Everything II": 7500,"Everything III": 10000
 };
 
-// ================= DICE =================
-function giveDice(u) {
+// ================= DICE SYSTEM =================
+function giveDice(user) {
   const r = Math.random();
 
-  if (r < 0.0001) return u.inventory["Cosmic Lucky Dice"]++, "🌌 Cosmic Dice";
-  if (r < 0.001) return u.inventory["Diamond Lucky Dice"]++, "💎 Diamond Dice";
-  if (r < 0.01) return u.inventory["Golden Lucky Dice"]++, "🥇 Golden Dice";
-  if (r < 0.05) return u.inventory["Lucky Dice"]++, "🎲 Lucky Dice";
+  if (r < 0.0001) return user.inventory["Cosmic Lucky Dice"]++, "🌌 Cosmic Dice";
+  if (r < 0.001) return user.inventory["Diamond Lucky Dice"]++, "💎 Diamond Dice";
+  if (r < 0.01) return user.inventory["Golden Lucky Dice"]++, "🥇 Golden Dice";
+  if (r < 0.05) return user.inventory["Lucky Dice"]++, "🎲 Lucky Dice";
+
   return null;
 }
 
@@ -158,16 +167,15 @@ function effect(n){
   return {color:COLOR,title:"🎲 Roll Result"};
 }
 
-// ================= AUTOROLL SPEED =================
-function interval(u){
+// ================= AUTOROLL =================
+function getInterval(u){
   let base = 10;
   if(u.rebirths >= 3){
     base -= Math.min(u.rebirths - 2, 5);
   }
-  return Math.max(base,5)*1000;
+  return Math.max(base, 5) * 1000;
 }
 
-// ================= AUTOROLL =================
 function startAutoroll(id){
   if(autorollIntervals[id]) return;
 
@@ -184,47 +192,59 @@ function startAutoroll(id){
     autorollLogs[id].push(r);
 
     saveData();
-  }, interval(getUser(id)));
+  }, getInterval(getUser(id)));
 }
 
 // ================= BOT =================
-client.on("messageCreate", async msg => {
+client.on("messageCreate", async (msg) => {
   if(!msg.guild || msg.author.bot) return;
 
   const u = getUser(msg.author.id);
   const isAdmin = msg.member?.permissions?.has(PermissionFlagsBits.Administrator);
 
-  // ================= AUTOROLL SUMMARY ON RETURN =================
-  const now = Date.now();
-  if(lastSeen[msg.author.id] && now - lastSeen[msg.author.id] > 15000){
-    const log = autorollLogs[msg.author.id] || [];
-    if(log.length){
-      msg.channel.send({
-        embeds:[new EmbedBuilder()
-          .setColor(COLOR)
-          .setTitle("📜 Autoroll Summary")
-          .setDescription(log.slice(-20).map(x=>`🎲 ${x.name}`).join("\n"))
-        ]
-      });
-      autorollLogs[msg.author.id] = [];
-    }
+  lastSeen[msg.author.id] = Date.now();
+
+  // AUTOROLL SUMMARY
+  if(autorollLogs[msg.author.id]?.length){
+    const log = autorollLogs[msg.author.id];
+    autorollLogs[msg.author.id]=[];
+
+    msg.channel.send({
+      embeds:[new EmbedBuilder()
+        .setColor(COLOR)
+        .setTitle("⏳ Autoroll Summary")
+        .setDescription(log.map(x=>`🎲 ${x.name} (${x.display})`).join("\n"))
+      ]
+    });
   }
-  lastSeen[msg.author.id] = now;
 
   // ================= ROLL =================
   if(msg.content === "?roll"){
     startAutoroll(msg.author.id);
 
-    const luck = getLuck(u.level,u.rebirths)*(activeBoost[msg.author.id]||1);
+    const boost = activeBoost[msg.author.id] || 1;
     delete activeBoost[msg.author.id];
 
-    let anim = await msg.reply("🎲 Rolling...");
+    const luck = getLuck(u.level,u.rebirths) * boost;
 
+    let anim = await msg.reply("🎲 Rolling...");
     const r = roll(luck);
 
     u.rolls++;
-    u.xp += points[r.name]||1;
+    const gain = points[r.name]||1;
+    u.xp += gain;
+
     u.owned[r.name]=(u.owned[r.name]||0)+1;
+
+    if(!u.rarest || (points[r.name]||0)>(points[u.rarest]||0))
+      u.rarest=r.name;
+
+    let leveled=false;
+    while(u.xp>=xpNeeded(u.level)){
+      u.xp-=xpNeeded(u.level);
+      u.level++;
+      leveled=true;
+    }
 
     const dice = giveDice(u);
     saveData();
@@ -236,12 +256,13 @@ client.on("messageCreate", async msg => {
       .setTitle("🎲 Roll Result🎲")
       .addFields(
         {name:"✨Result✨",value:`${r.name} [${r.display}]`},
-        {name:"📈Progress📈",value:`⭐Level: ${u.level}\nXP: ${u.xp}/${xpNeeded(u.level)} [+${points[r.name]||1}]`},
+        {name:"📈Progress📈",value:`⭐Level: ${u.level}\nXP: ${u.xp}/${xpNeeded(u.level)} [+${gain}]`},
         {name:"⚡Roll Stats⚡",value:`🔁Rolls: ${u.rolls}\n🍀Luck: x${luck.toFixed(2)}`}
       )
       .setFooter({text:`RNG System Luck Engine Active • ${new Date().toLocaleTimeString()}`});
 
     if(dice) embed.addFields({name:"🎁 Dice",value:dice});
+    if(leveled) embed.addFields({name:"⬆️ Level Up!",value:"LEVEL UP!"});
 
     await anim.edit({embeds:[embed]});
 
@@ -268,64 +289,82 @@ client.on("messageCreate", async msg => {
   // ================= USE =================
   if(msg.content.startsWith("?use")){
     const type = msg.content.slice(4).trim().toLowerCase();
-    const map = {
+
+    const boosts = {
       "lucky dice":5,
       "golden lucky dice":25,
       "diamond lucky dice":100,
       "cosmic lucky dice":1000
     };
 
-    const key = Object.keys(map).find(k=>k===type);
-    if(!key) return msg.reply("Invalid");
-    if(u.inventory[key]<=0) return msg.reply("None");
+    const key = Object.keys(boosts).find(k=>k===type);
+    if(!key) return msg.reply("❌ Invalid item");
+    if(u.inventory[key] <= 0) return msg.reply("❌ None left");
 
     u.inventory[key]--;
-    activeBoost[msg.author.id]=map[key];
+    activeBoost[msg.author.id]=boosts[key];
 
     saveData();
-    return msg.reply(`Used ${key}`);
+    return msg.reply(`⚡ Used ${key}`);
   }
 
   // ================= REBIRTH =================
   if(msg.content === "?rebirth"){
-    const req = Math.floor(1000*Math.pow(2.5,u.rebirths));
-    if(u.rolls<req) return msg.reply(`Need ${req}`);
+    const req = Math.floor(1000 * Math.pow(2.5,u.rebirths));
+    if(u.rolls < req) return msg.reply(`Need ${req} rolls`);
+
+    pendingRebirth[msg.author.id]=true;
+
+    const embed = new EmbedBuilder()
+      .setColor(COLOR)
+      .setTitle("🔄 Rebirth System")
+      .setDescription(
+`Rebirth 1: Unlock AutoRoll (10s)
+Rebirth 2: XP x1.5 per rebirth
+Rebirth 3+: AutoRoll speed -1s per rebirth (min 5s max reduction 5s)`
+      );
+
+    return msg.reply({embeds:[embed]});
+  }
+
+  if(msg.content === "?rebirth confirm"){
+    if(!pendingRebirth[msg.author.id]) return;
 
     u.rebirths++;
     u.level=1;
     u.xp=0;
     u.rolls=0;
 
+    pendingRebirth[msg.author.id]=false;
     saveData();
 
-    return msg.reply("Rebirth complete");
+    return msg.reply("✅ Rebirth complete");
   }
 
   // ================= ADMIN =================
   if(isAdmin){
-
     if(msg.content.startsWith("?setrolls")){
       const user = msg.mentions.users.first();
-      const val = parseInt(msg.content.split(" ")[2]);
-      getUser(user.id).rolls = val;
+      const amt = parseInt(msg.content.split(" ")[2]);
+      getUser(user.id).rolls = amt;
       saveData();
-      return msg.reply("ok");
+      return msg.reply("done");
     }
 
     if(msg.content.startsWith("?setlevel")){
       const user = msg.mentions.users.first();
-      const val = parseInt(msg.content.split(" ")[2]);
-      getUser(user.id).level = val;
+      const amt = parseInt(msg.content.split(" ")[2]);
+      getUser(user.id).level = amt;
       saveData();
-      return msg.reply("ok");
+      return msg.reply("done");
     }
 
     if(msg.content.startsWith("?setrebirth")){
       const user = msg.mentions.users.first();
-      const val = parseInt(msg.content.split(" ")[2]);
-      getUser(user.id).rebirths = val;
+      const amt = parseInt(msg.content.split(" ")[2]);
+      getUser(user.id).rebirths = amt;
       saveData();
-      return msg.reply("ok");
+      return msg.reply("done");
     }
   }
 
