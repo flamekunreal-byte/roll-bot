@@ -12,16 +12,26 @@ const client = new Client({
 
 const DATA_FILE = "./data.json";
 
+// ---------------- SAFE JSON LOAD ----------------
 let userData = {};
-if (fs.existsSync(DATA_FILE)) {
-  userData = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+
+try {
+  if (fs.existsSync(DATA_FILE)) {
+    userData = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+  }
+} catch (e) {
+  console.log("Corrupt data.json detected, resetting safely");
+  userData = {};
 }
 
+// ---------------- ATOMIC SAVE (prevents corruption) ----------------
 function saveData() {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(userData, null, 2));
+  const tempFile = DATA_FILE + ".tmp";
+  fs.writeFileSync(tempFile, JSON.stringify(userData, null, 2));
+  fs.renameSync(tempFile, DATA_FILE);
 }
 
-// -------------------- POINTS --------------------
+// ---------------- POINTS ----------------
 const points = {
   "Part I": 1,
   "Part II": 2,
@@ -60,7 +70,7 @@ const points = {
   "Everything III": 10000
 };
 
-// -------------------- ROLES --------------------
+// ---------------- ROLES ----------------
 const roles = {
   "Part I": "1504750381539004477",
   "Part II": "1504750412132253807",
@@ -99,7 +109,7 @@ const roles = {
   "Everything III": "1504751748986962030"
 };
 
-// -------------------- USER --------------------
+// ---------------- USER DATA ----------------
 function getUser(id) {
   if (!userData[id]) {
     userData[id] = {
@@ -121,12 +131,14 @@ function getLuck(level) {
   return Math.pow(1.2, level - 1);
 }
 
-// -------------------- ROLL --------------------
+// ---------------- ROLL ----------------
 function roll(luck) {
   const r = Math.random();
 
-  const check = (chance, name, display) => {
-    if (r < chance * luck) return { name, chance: display };
+  const check = (chance, name, displayChance) => {
+    if (r < chance * luck) {
+      return { name, chance: displayChance };
+    }
     return null;
   };
 
@@ -170,7 +182,7 @@ function roll(luck) {
   );
 }
 
-// -------------------- BOT --------------------
+// ---------------- BOT ----------------
 client.on("ready", () => {
   console.log(`Logged in as ${client.user.tag}`);
 });
@@ -189,7 +201,6 @@ client.on("messageCreate", async (message) => {
     const rarity = result.name;
 
     user.rolls++;
-
     user.rarityCounts[rarity] = (user.rarityCounts[rarity] || 0) + 1;
 
     const gainedXP = points[rarity] || 1;
@@ -214,23 +225,24 @@ client.on("messageCreate", async (message) => {
     saveData();
 
     let reply =
-`🎲 You got: **${rarity}**
-📉 Chance: **${result.chance}**
-⭐ Level: **${user.level}**
+`🎲 You got: **${rarity} [${result.chance}]**
+⭐ Level: ${user.level}
 📊 XP +${gainedXP} (${user.xp}/${xpNeeded(user.level)})
 🍀 Luck: x${getLuck(user.level).toFixed(2)}`;
 
     if (leveledUp) reply += `\n⬆️ Level up!`;
-    if (!user.owned.includes(rarity)) reply += `\n🎉 New role unlocked!`;
+
+    if (!user.owned.includes(rarity)) {
+      reply += `\n🎉 You've been awarded with a new role`;
+    }
 
     return message.reply(reply);
   }
 
   // ---------------- LEADERBOARD ----------------
   if (message.content === "?leaderboard") {
-    const entries = Object.entries(userData);
-
-    const sorted = entries.sort((a, b) => b[1].level - a[1].level);
+    const sorted = Object.entries(userData)
+      .sort((a, b) => b[1].level - a[1].level);
 
     let text = `🏆 **Leaderboard**\n\n`;
 
@@ -238,8 +250,11 @@ client.on("messageCreate", async (message) => {
       const topRarity = Object.entries(data.rarityCounts || {})
         .sort((a, b) => b[1] - a[1])[0];
 
+      const userTag =
+        message.guild.members.cache.get(id)?.user.username || "Unknown";
+
       text +=
-`<@${id}>
+`${userTag}
 ⭐ Level: ${data.level || 1}
 🎲 Rolls: ${data.rolls || 0}
 💎 Rarest: ${topRarity ? `${topRarity[0]} (${topRarity[1]}x)` : "None"}
