@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits } = require("discord.js");
+const { Client, GatewayIntentBits, Options } = require("discord.js");
 const fs = require("fs");
 
 const client = new Client({
@@ -7,7 +7,9 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.MessageContent
-  ]
+  ],
+  // 🔥 THIS STOPS USER PINGS IN MESSAGES
+  allowedMentions: { parse: [] }
 });
 
 // -------------------- DATA --------------------
@@ -203,8 +205,9 @@ client.on("messageCreate", async (message) => {
     user.rolls++;
 
     const rarity = result.name;
+    const xpGain = points[rarity] || 1;
 
-    user.xp += points[rarity] || 1;
+    user.xp += xpGain;
 
     if (!user.owned[rarity]) user.owned[rarity] = 0;
     user.owned[rarity]++;
@@ -228,17 +231,17 @@ client.on("messageCreate", async (message) => {
 
     saveData();
 
+    const nextXP = xpNeeded(user.level);
+
     let reply =
 `🎲 ${rarity} [${result.display}]
 ⭐ Level: ${user.level}
+📊 XP +${xpGain} (${user.xp}/${nextXP})
 🔁 Rolls: ${user.rolls}
 🍀 Luck: x${luck.toFixed(2)}`;
 
     if (leveled) reply += `\n⬆️ Level up!`;
-
-    if (user.owned[rarity] === 1) {
-      reply += `\n🎉 New rarity unlocked!`;
-    }
+    if (user.owned[rarity] === 1) reply += `\n🎉 New rarity unlocked!`;
 
     return message.reply(reply);
   }
@@ -252,13 +255,11 @@ client.on("messageCreate", async (message) => {
     }
 
     pendingRebirth[message.member.id] = true;
-    return message.reply(`⚠️ Type **?rebirth confirm** to reset for +1 rebirth (x2 luck)`);
+    return message.reply(`⚠️ Type **?rebirth confirm** to rebirth (+x2 luck stacking)`);
   }
 
   if (message.content === "?rebirth confirm") {
     if (!pendingRebirth[message.member.id]) return;
-
-    const user = getUser(message.member.id);
 
     user.rebirths++;
     user.level = 1;
@@ -269,7 +270,7 @@ client.on("messageCreate", async (message) => {
 
     saveData();
 
-    return message.reply(`🔥 Rebirth successful! You now have x${Math.pow(2, user.rebirths)} luck multiplier`);
+    return message.reply(`🔥 Rebirth complete! Luck multiplier increased.`);
   }
 
   // ---------------- LEADERBOARD ----------------
@@ -279,34 +280,34 @@ client.on("messageCreate", async (message) => {
     const topRolls = [...entries]
       .sort((a, b) => (b[1].rolls || 0) - (a[1].rolls || 0))
       .slice(0, 5)
-      .map(([id, d], i) => `${i + 1}. <@${id}> - ${d.rolls || 0} rolls`)
+      .map((x, i) => `${i + 1}. UserID:${x[0]} - ${x[1].rolls} rolls`)
       .join("\n");
 
-    const topLevel = [...entries]
+    const topLevels = [...entries]
       .sort((a, b) => (b[1].level || 1) - (a[1].level || 1))
       .slice(0, 5)
-      .map(([id, d], i) => `${i + 1}. <@${id}> - Level ${d.level || 1}`)
+      .map((x, i) => `${i + 1}. UserID:${x[0]} - Level ${x[1].level}`)
       .join("\n");
 
     const topRare = [...entries]
-      .map(([id, d]) => {
-        const rare = d.rarest || "None";
-        const count = d.owned?.[rare] || 0;
-        return { id, rare, count };
+      .map(x => {
+        const u = x[1];
+        const rare = u.rarest || "None";
+        return { id: x[0], rare, count: u.owned?.[rare] || 0 };
       })
       .sort((a, b) => b.count - a.count)
       .slice(0, 5)
-      .map((x, i) => `${i + 1}. <@${x.id}> - ${x.rare} (${x.count}x)`)
+      .map((x, i) => `${i + 1}. UserID:${x.id} - ${x.rare} (${x.count}x)`)
       .join("\n");
 
     return message.reply(
-`📊 **Leaderboard**
+`📊 LEADERBOARD
 
 🔁 Total Rolls:
 ${topRolls}
 
 ⭐ Highest Level:
-${topLevel}
+${topLevels}
 
 💎 Rarest Rolls:
 ${topRare}`
