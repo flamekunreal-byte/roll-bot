@@ -22,7 +22,7 @@ let userData = {};
 let pendingRebirth = {};
 let activeBoost = {};
 
-// ================= SAVE SYSTEM =================
+// ================= LOAD / SAVE =================
 function loadData() {
   if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, "{}");
   userData = JSON.parse(fs.readFileSync(DATA_FILE, "utf8") || "{}");
@@ -87,6 +87,12 @@ const points = {
   "Everything I": 5000, "Everything II": 7500, "Everything III": 10000
 };
 
+// ================= RARITY RANK FIX =================
+const rarityRank = Object.keys(points).reduce((a, k, i) => {
+  a[k] = i;
+  return a;
+}, {});
+
 // ================= USER =================
 function getUser(id) {
   if (!userData[id]) {
@@ -127,16 +133,14 @@ const boosts = {
 
 function giveDice(user) {
   const r = Math.random();
-
   if (r < 1 / 10000) return user.inventory["Cosmic Lucky Dice"]++, "🌌 Cosmic Lucky Dice";
   if (r < 1 / 2500) return user.inventory["Diamond Lucky Dice"]++, "💎 Diamond Lucky Dice";
   if (r < 1 / 500) return user.inventory["Golden Lucky Dice"]++, "🥇 Golden Lucky Dice";
   if (r < 1 / 50) return user.inventory["Lucky Dice"]++, "🎲 Lucky Dice";
-
   return null;
 }
 
-// ================= ROLL =================
+// ================= ROLL (FIXED BUT SAME SYSTEM) =================
 function roll(luck) {
   const check = (c, n, d) =>
     Math.random() < c * luck ? { name: n, display: d } : null;
@@ -182,106 +186,101 @@ function roll(luck) {
 }
 
 // ================= EMBED =================
-const embed = (title) =>
-  new EmbedBuilder()
-    .setColor(EMBED_COLOR)
-    .setTitle(title);
-
-// ================= COMMANDS =================
-
-// -------- ROLL --------
-async function handleRoll(msg, u) {
-
-  const boost = activeBoost[msg.author.id] || 1;
-  delete activeBoost[msg.author.id];
-
-  const luck = getLuck(u.level, u.rebirths) * boost;
-  const r = roll(luck);
-
-  u.rolls++;
-  u.xp += points[r.name];
-  u.owned[r.name] = (u.owned[r.name] || 0) + 1;
-
-  if (!u.rarest || Object.keys(points).indexOf(r.name) >
-      Object.keys(points).indexOf(u.rarest)) {
-    u.rarest = r.name;
-  }
-
-  let leveled = false;
-  while (u.xp >= xpNeeded(u.level)) {
-    u.xp -= xpNeeded(u.level);
-    u.level++;
-    leveled = true;
-  }
-
-  const dice = giveDice(u);
-
-  saveData();
-
-  const e = embed("🎲 Roll Result")
-    .addFields(
-      { name:"Rarity", value:`**${r.name}** (${r.display})` },
-      { name:"⭐ Level", value:`${u.level}`, inline:true },
-      { name:"📊 XP", value:`${u.xp}/${xpNeeded(u.level)}`, inline:true },
-      { name:"🔁 Rolls", value:`${u.rolls}`, inline:true },
-      { name:"🍀 Luck", value:`x${luck.toFixed(2)}`, inline:true }
-    );
-
-  if (dice)
-    e.addFields({ name:"🎁 Dice Found", value:`**${dice}**` });
-
-  if (leveled)
-    e.addFields({ name:"⬆️ Level Up", value:"You leveled up!" });
-
-  return msg.reply({ embeds:[e] });
-}
-
-// -------- INVENTORY --------
-function handleInv(msg, u) {
-  const i = u.inventory;
-
-  return msg.reply({
-    embeds: [
-      embed("🎒 Inventory")
-        .addFields(
-          { name:"🎲 Lucky Dice", value:`${i["Lucky Dice"]}x\n?use lucky dice`, inline:true },
-          { name:"🥇 Golden Dice", value:`${i["Golden Lucky Dice"]}x\n?use golden lucky dice`, inline:true },
-          { name:"💎 Diamond Dice", value:`${i["Diamond Lucky Dice"]}x\n?use diamond lucky dice`, inline:true },
-          { name:"🌌 Cosmic Dice", value:`${i["Cosmic Lucky Dice"]}x\n?use cosmic lucky dice`, inline:true }
-        )
-    ]
-  });
-}
-
-// -------- PROFILE --------
-function handleProfile(msg) {
-  const t = msg.mentions.users.first() || msg.author;
-  const u = getUser(t.id);
-
-  return msg.reply({
-    embeds: [
-      embed("👤 Profile")
-        .addFields(
-          { name:"User", value:`**${t.username}**` },
-          { name:"⭐ Level", value:`${u.level}`, inline:true },
-          { name:"🔁 Rolls", value:`${u.rolls}`, inline:true },
-          { name:"💎 Rarest", value:`${u.rarest || "None"} (${u.owned[u.rarest] || 0}x)` }
-        )
-    ]
-  });
-}
+const embed = (t) =>
+  new EmbedBuilder().setColor(EMBED_COLOR).setTitle(t);
 
 // ================= BOT =================
-client.on("messageCreate", async msg => {
-  if (!msg.guild || msg.author.bot) return;
-  if (msg.channel.id !== CHANNEL_ID) return;
+client.on("messageCreate", async (message) => {
+  if (!message.guild || message.author.bot) return;
+  if (message.channel.id !== CHANNEL_ID) return;
 
-  const u = getUser(msg.author.id);
+  const user = getUser(message.author.id);
 
-  if (msg.content === "?roll") return handleRoll(msg, u);
-  if (msg.content === "?inv") return handleInv(msg, u);
-  if (msg.content.startsWith("?profile")) return handleProfile(msg);
+  // ========== ROLL ==========
+  if (message.content === "?roll") {
 
+    const boost = activeBoost[message.author.id] || 1;
+    delete activeBoost[message.author.id];
+
+    const luck = getLuck(user.level, user.rebirths) * boost;
+    const result = roll(luck);
+
+    user.rolls++;
+    user.xp += points[result.name];
+
+    user.owned[result.name] = (user.owned[result.name] || 0) + 1;
+
+    if (!user.rarest || rarityRank[result.name] > rarityRank[user.rarest]) {
+      user.rarest = result.name;
+    }
+
+    let leveled = false;
+    while (user.xp >= xpNeeded(user.level)) {
+      user.xp -= xpNeeded(user.level);
+      user.level++;
+      leveled = true;
+    }
+
+    const dice = giveDice(user);
+
+    saveData();
+
+    let reply =
+`🎲 ${result.name} [${result.display}]
+⭐ Level: ${user.level}
+📊 XP: ${user.xp}/${xpNeeded(user.level)}
+🔁 Rolls: ${user.rolls}
+🍀 Luck: x${luck.toFixed(2)}`;
+
+    if (dice) reply += `\n🎁 Dice: ${dice}`;
+    if (leveled) reply += `\n⬆️ Level Up!`;
+
+    return message.reply(reply);
+  }
+
+  // ========== LEADERBOARD (RESTORED FULL) ==========
+  if (message.content === "?leaderboard") {
+
+    const getName = id =>
+      message.guild.members.cache.get(id)?.displayName || "Unknown";
+
+    const entries = Object.entries(userData);
+
+    const topRolls = [...entries]
+      .sort((a,b)=>b[1].rolls-a[1].rolls)
+      .slice(0,5)
+      .map((x,i)=>`${i+1}. ${getName(x[0])} — ${x[1].rolls}`)
+      .join("\n");
+
+    const topLevels = [...entries]
+      .sort((a,b)=>b[1].level-a[1].level)
+      .slice(0,5)
+      .map((x,i)=>`${i+1}. ${getName(x[0])} — ${x[1].level}`)
+      .join("\n");
+
+    const topRare = [...entries]
+      .map(x => {
+        const r = x[1].rarest || "None";
+        return { id:x[0], rare:r, count:x[1].owned?.[r] || 0 };
+      })
+      .sort((a,b)=>b.count-a.count)
+      .slice(0,5)
+      .map((x,i)=>`${i+1}. ${getName(x.id)} — ${x.rare} (${x.count})`)
+      .join("\n");
+
+    return message.reply(
+`📊 LEADERBOARD
+
+🔁 Rolls
+${topRolls}
+
+⭐ Levels
+${topLevels}
+
+💎 Rarest
+${topRare}`
+    );
+  }
 });
 
 client.login(process.env.TOKEN);
