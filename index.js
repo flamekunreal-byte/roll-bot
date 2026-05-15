@@ -22,7 +22,7 @@ let userData = {};
 let pendingRebirth = {};
 let activeBoost = {};
 
-// ================= LOAD / SAVE =================
+// ================= SAVE SYSTEM =================
 function loadData() {
   if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, "{}");
   userData = JSON.parse(fs.readFileSync(DATA_FILE, "utf8") || "{}");
@@ -35,7 +35,7 @@ function saveData() {
 loadData();
 setInterval(saveData, 30000);
 
-// ================= ROLES (UNCHANGED) =================
+// ================= ROLES =================
 const roles = {
   "Part I": "1504750381539004477",
   "Part II": "1504750412132253807",
@@ -74,7 +74,7 @@ const roles = {
   "Everything III": "1504751748986962030"
 };
 
-// ================= POINTS (UNCHANGED) =================
+// ================= POINTS =================
 const points = {
   "Part I": 1, "Part II": 2, "Part III": 3,
   "Reset I": 5, "Reset II": 7, "Reset III": 10,
@@ -117,7 +117,7 @@ function getLuck(level, rebirths) {
   return Math.pow(1.2, level - 1) * Math.pow(2, rebirths);
 }
 
-// ================= DICE (UNCHANGED) =================
+// ================= DICE =================
 const boosts = {
   "lucky dice": 5,
   "golden lucky dice": 25,
@@ -127,43 +127,44 @@ const boosts = {
 
 function giveDice(user) {
   const r = Math.random();
+
   if (r < 1 / 10000) return user.inventory["Cosmic Lucky Dice"]++, "🌌 Cosmic Lucky Dice";
   if (r < 1 / 2500) return user.inventory["Diamond Lucky Dice"]++, "💎 Diamond Lucky Dice";
   if (r < 1 / 500) return user.inventory["Golden Lucky Dice"]++, "🥇 Golden Lucky Dice";
   if (r < 1 / 50) return user.inventory["Lucky Dice"]++, "🎲 Lucky Dice";
+
   return null;
 }
 
-// ================= FIXED ROLL (IMPORTANT FIX) =================
-// FIX: no more broken overlap logic — each check is independent
+// ================= ROLL =================
 function roll(luck) {
-  const check = (chance, name, display) =>
-    Math.random() < chance * luck ? { name, display } : null;
+  const check = (c, n, d) =>
+    Math.random() < c * luck ? { name: n, display: d } : null;
 
   return (
-    check(1/100000000,"Everything III","1/100,000,000") ||
-    check(1/10000000,"Everything II","1/10,000,000") ||
-    check(1/5000000,"Everything I","1/5,000,000") ||
+    check(1/100000000,"Everything III","1/100M") ||
+    check(1/10000000,"Everything II","1/10M") ||
+    check(1/5000000,"Everything I","1/5M") ||
 
-    check(1/2000000,"Deep Research III","1/2,000,000") ||
-    check(1/1000000,"Deep Research II","1/1,000,000") ||
-    check(1/750000,"Deep Research I","1/750,000") ||
+    check(1/2000000,"Deep Research III","1/2M") ||
+    check(1/1000000,"Deep Research II","1/1M") ||
+    check(1/750000,"Deep Research I","1/750K") ||
 
-    check(1/500000,"Automation III","1/500,000") ||
-    check(1/250000,"Automation II","1/250,000") ||
-    check(1/150000,"Automation I","1/150,000") ||
+    check(1/500000,"Automation III","1/500K") ||
+    check(1/250000,"Automation II","1/250K") ||
+    check(1/150000,"Automation I","1/150K") ||
 
-    check(1/100000,"Tier III","1/100,000") ||
-    check(1/75000,"Tier II","1/75,000") ||
-    check(1/50000,"Tier I","1/50,000") ||
+    check(1/100000,"Tier III","1/100K") ||
+    check(1/75000,"Tier II","1/75K") ||
+    check(1/50000,"Tier I","1/50K") ||
 
-    check(1/30000,"Dark Part III","1/30,000") ||
-    check(1/15000,"Dark Part II","1/15,000") ||
-    check(1/7000,"Dark Part I","1/7,000") ||
+    check(1/30000,"Dark Part III","1/30K") ||
+    check(1/15000,"Dark Part II","1/15K") ||
+    check(1/7000,"Dark Part I","1/7K") ||
 
-    check(1/4000,"Rainbow Part III","1/4,000") ||
-    check(1/2000,"Rainbow Part II","1/2,000") ||
-    check(1/1000,"Rainbow Part I","1/1,000") ||
+    check(1/4000,"Rainbow Part III","1/4K") ||
+    check(1/2000,"Rainbow Part II","1/2K") ||
+    check(1/1000,"Rainbow Part I","1/1K") ||
 
     check(1/600,"Gold Part III","1/600") ||
     check(1/300,"Gold Part II","1/300") ||
@@ -181,160 +182,106 @@ function roll(luck) {
 }
 
 // ================= EMBED =================
-const embed = t => new EmbedBuilder()
-  .setColor(EMBED_COLOR)
-  .setTitle(t);
+const embed = (title) =>
+  new EmbedBuilder()
+    .setColor(EMBED_COLOR)
+    .setTitle(title);
 
-// ================= RARITY FIX =================
-const rarityRank = Object.keys(points)
-  .reduce((a, k, i) => (a[k] = i + 1, a), {});
+// ================= COMMANDS =================
 
-// ================= PROFILE (NEW - ADDED ONLY) =================
-function handleProfile(message) {
-  const target = message.mentions.users.first() || message.author;
-  const user = getUser(target.id);
+// -------- ROLL --------
+async function handleRoll(msg, u) {
 
-  const rare = user.rarest || "None";
+  const boost = activeBoost[msg.author.id] || 1;
+  delete activeBoost[msg.author.id];
 
-  return message.reply({
+  const luck = getLuck(u.level, u.rebirths) * boost;
+  const r = roll(luck);
+
+  u.rolls++;
+  u.xp += points[r.name];
+  u.owned[r.name] = (u.owned[r.name] || 0) + 1;
+
+  if (!u.rarest || Object.keys(points).indexOf(r.name) >
+      Object.keys(points).indexOf(u.rarest)) {
+    u.rarest = r.name;
+  }
+
+  let leveled = false;
+  while (u.xp >= xpNeeded(u.level)) {
+    u.xp -= xpNeeded(u.level);
+    u.level++;
+    leveled = true;
+  }
+
+  const dice = giveDice(u);
+
+  saveData();
+
+  const e = embed("🎲 Roll Result")
+    .addFields(
+      { name:"Rarity", value:`**${r.name}** (${r.display})` },
+      { name:"⭐ Level", value:`${u.level}`, inline:true },
+      { name:"📊 XP", value:`${u.xp}/${xpNeeded(u.level)}`, inline:true },
+      { name:"🔁 Rolls", value:`${u.rolls}`, inline:true },
+      { name:"🍀 Luck", value:`x${luck.toFixed(2)}`, inline:true }
+    );
+
+  if (dice)
+    e.addFields({ name:"🎁 Dice Found", value:`**${dice}**` });
+
+  if (leveled)
+    e.addFields({ name:"⬆️ Level Up", value:"You leveled up!" });
+
+  return msg.reply({ embeds:[e] });
+}
+
+// -------- INVENTORY --------
+function handleInv(msg, u) {
+  const i = u.inventory;
+
+  return msg.reply({
     embeds: [
-      embed("👤 Profile").addFields(
-        { name: "User", value: target.username },
-        { name: "⭐ Level", value: `${user.level}`, inline: true },
-        { name: "🔁 Rolls", value: `${user.rolls}`, inline: true },
-        { name: "💎 Rarest Roll", value: `${rare} (${user.owned[rare] || 0}x)` }
-      )
+      embed("🎒 Inventory")
+        .addFields(
+          { name:"🎲 Lucky Dice", value:`${i["Lucky Dice"]}x\n?use lucky dice`, inline:true },
+          { name:"🥇 Golden Dice", value:`${i["Golden Lucky Dice"]}x\n?use golden lucky dice`, inline:true },
+          { name:"💎 Diamond Dice", value:`${i["Diamond Lucky Dice"]}x\n?use diamond lucky dice`, inline:true },
+          { name:"🌌 Cosmic Dice", value:`${i["Cosmic Lucky Dice"]}x\n?use cosmic lucky dice`, inline:true }
+        )
     ]
   });
 }
 
-// ================= MAIN BOT =================
-client.on("messageCreate", async message => {
-  if (!message.guild || message.author.bot) return;
-  if (message.channel.id !== CHANNEL_ID) return;
+// -------- PROFILE --------
+function handleProfile(msg) {
+  const t = msg.mentions.users.first() || msg.author;
+  const u = getUser(t.id);
 
-  const user = getUser(message.author.id);
+  return msg.reply({
+    embeds: [
+      embed("👤 Profile")
+        .addFields(
+          { name:"User", value:`**${t.username}**` },
+          { name:"⭐ Level", value:`${u.level}`, inline:true },
+          { name:"🔁 Rolls", value:`${u.rolls}`, inline:true },
+          { name:"💎 Rarest", value:`${u.rarest || "None"} (${u.owned[u.rarest] || 0}x)` }
+        )
+    ]
+  });
+}
 
-  // ---------------- ROLL ----------------
-  if (message.content === "?roll") {
+// ================= BOT =================
+client.on("messageCreate", async msg => {
+  if (!msg.guild || msg.author.bot) return;
+  if (msg.channel.id !== CHANNEL_ID) return;
 
-    const boost = activeBoost[message.author.id] || 1;
-    delete activeBoost[message.author.id];
+  const u = getUser(msg.author.id);
 
-    const luck = getLuck(user.level, user.rebirths) * boost;
-    const result = roll(luck);
+  if (msg.content === "?roll") return handleRoll(msg, u);
+  if (msg.content === "?inv") return handleInv(msg, u);
+  if (msg.content.startsWith("?profile")) return handleProfile(msg);
 
-    user.rolls++;
-    user.xp += points[result.name];
-
-    user.owned[result.name] = (user.owned[result.name] || 0) + 1;
-
-    // FIXED rarest tracking
-    if (!user.rarest || rarityRank[result.name] > rarityRank[user.rarest]) {
-      user.rarest = result.name;
-    }
-
-    let leveled = false;
-    while (user.xp >= xpNeeded(user.level)) {
-      user.xp -= xpNeeded(user.level);
-      user.level++;
-      leveled = true;
-    }
-
-    const dice = giveDice(user);
-
-    saveData();
-
-    let reply =
-`🎲 ${result.name} [${result.display}]
-⭐ Level: ${user.level}
-📊 XP: ${user.xp}/${xpNeeded(user.level)}
-🔁 Rolls: ${user.rolls}
-🍀 Luck: x${luck.toFixed(2)}`;
-
-    if (dice) reply += `\n🎁 Dice: ${dice}`;
-    if (leveled) reply += `\n⬆️ Level Up!`;
-
-    return message.reply(reply);
-  }
-
-  // ---------------- REBIRTH ----------------
-  if (message.content === "?rebirth") {
-    const req = Math.floor(1000 * Math.pow(2.5, user.rebirths));
-
-    if (user.rolls < req)
-      return message.reply(`❌ Need ${req} rolls.`);
-
-    pendingRebirth[message.author.id] = true;
-    return message.reply("⚠️ Type ?rebirth confirm");
-  }
-
-  if (message.content === "?rebirth confirm") {
-    if (!pendingRebirth[message.author.id]) return;
-
-    user.rebirths++;
-    user.level = 1;
-    user.xp = 0;
-    user.rolls = 0;
-
-    pendingRebirth[message.author.id] = false;
-    saveData();
-
-    return message.reply("🔥 Rebirth complete!");
-  }
-
-  // ---------------- PROFILE (NEW) ----------------
-  if (message.content.startsWith("?profile")) {
-    return handleProfile(message);
-  }
-
-  // ---------------- LEADERBOARD ----------------
-  if (message.content === "?leaderboard") {
-
-    const getName = id =>
-      message.guild.members.cache.get(id)?.displayName || "Unknown";
-
-    const entries = Object.entries(userData);
-
-    const topRolls = [...entries]
-      .sort((a,b)=>b[1].rolls-a[1].rolls)
-      .slice(0,5)
-      .map((x,i)=>`${i+1}. ${getName(x[0])} — ${x[1].rolls}`)
-      .join("\n");
-
-    const topLevels = [...entries]
-      .sort((a,b)=>b[1].level-a[1].level)
-      .slice(0,5)
-      .map((x,i)=>`${i+1}. ${getName(x[0])} — ${x[1].level}`)
-      .join("\n");
-
-    const topRare = [...entries]
-      .map(x => {
-        const r = x[1].rarest || "None";
-        return {
-          id: x[0],
-          rare: r,
-          count: x[1].owned?.[r] || 0
-        };
-      })
-      .sort((a,b)=>b.count-a.count)
-      .slice(0,5)
-      .map((x,i)=>`${i+1}. ${getName(x.id)} — ${x.rare} (${x.count}x)`)
-      .join("\n");
-
-    return message.reply(
-`📊 LEADERBOARD
-
-🔁 Rolls:
-${topRolls}
-
-⭐ Levels:
-${topLevels}
-
-💎 Rarest:
-${topRare}`
-    );
-  }
 });
 
 client.login(process.env.TOKEN);
