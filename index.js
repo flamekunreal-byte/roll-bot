@@ -123,6 +123,8 @@ function giveDice(user) {
 
 // ================= ROLL =================
 function roll(luck) {
+  luck = Math.min(Math.max(luck, 1), 1e6);
+  
   const c = (p,n,d)=>Math.random()<p*luck?{name:n,display:d}:null;
 
   return (
@@ -152,7 +154,7 @@ function roll(luck) {
     c(2e-5,"Reset I","1/20")||
     c(1e-5,"Part III","1/10")||
     c(1e-6,"Part II","1/6")||
-    {name:"Part I",display:"1/3"}
+    return { name: "Part I", display: "1/3" };
   );
 }
 
@@ -177,7 +179,9 @@ function getInterval(u){
 }
 
 function startAutoroll(id){
-  if(autorollIntervals[id]) return;
+if (autorollIntervals[id]) {
+  clearInterval(autorollIntervals[id]);
+}
 
   autorollIntervals[id] = setInterval(() => {
     const u = getUser(id);
@@ -205,22 +209,37 @@ client.on("messageCreate", async (msg) => {
   lastSeen[msg.author.id] = Date.now();
 
   // AUTOROLL SUMMARY
-  if(autorollLogs[msg.author.id]?.length){
-    const log = autorollLogs[msg.author.id];
-    autorollLogs[msg.author.id]=[];
+const now = Date.now();
+const last = lastSeen[msg.author.id] || now;
 
-    msg.channel.send({
-      embeds:[new EmbedBuilder()
+// only show if inactive for 30+ seconds
+if (autorollLogs[msg.author.id]?.length && now - last > 30000) {
+
+  const log = autorollLogs[msg.author.id];
+  autorollLogs[msg.author.id] = [];
+
+  msg.channel.send({
+    embeds: [
+      new EmbedBuilder()
         .setColor(COLOR)
         .setTitle("⏳ Autoroll Summary")
-        .setDescription(log.map(x=>`🎲 ${x.name} (${x.display})`).join("\n"))
-      ]
-    });
+        .setDescription(
+          log.slice(-20).map(x => `🎲 ${x.name} (${x.display})`).join("\n")
+        )
+    ]
+  });
+}
+  // ================= ROLL =================
+if (msg.content === "?roll") {
+
+  const u = getUser(msg.author.id);
+
+  // unlock condition
+  if (u.rebirths < 1) {
+    return msg.reply("🔒 Autoroll unlocks at Rebirth 1");
   }
 
-  // ================= ROLL =================
-  if(msg.content === "?roll"){
-    startAutoroll(msg.author.id);
+  startAutoroll(msg.author.id);
 
     const boost = activeBoost[msg.author.id] || 1;
     delete activeBoost[msg.author.id];
