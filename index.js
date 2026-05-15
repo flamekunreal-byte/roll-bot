@@ -240,51 +240,52 @@ client.on("messageCreate", async (message) => {
   const user = getUser(message.member.id);
 
   // ---------------- ROLL ----------------
-  if (message.content === "?roll") {
+if (message.content === "?roll") {
 
-    let boost = activeBoost[message.member.id] || 1;
-    delete activeBoost[message.member.id];
+  let boost = activeBoost[message.member.id] || 1;
+  delete activeBoost[message.member.id];
 
-    const luck = getLuck(user.level, user.rebirths) * boost;
+  const luck = getLuck(user.level, user.rebirths) * boost;
 
-    const result = roll(luck);
-    user.rolls++;
+  const result = roll(luck);
+  user.rolls++;
 
-    const rarity = result.name;
-    const xpGain = points[rarity] || 1;
+  const rarity = result.name;
+  const xpGain = points[rarity] || 1;
 
-    user.xp += xpGain;
+  user.xp += xpGain;
 
-    if (!user.owned[rarity]) user.owned[rarity] = 0;
-    user.owned[rarity]++;
+  if (!user.owned[rarity]) user.owned[rarity] = 0;
+  user.owned[rarity]++;
 
-    if (!user.rarest || user.owned[rarity] > user.owned[user.rarest]) {
-      user.rarest = rarity;
-    }
+  if (!user.rarest || user.owned[rarity] > user.owned[user.rarest]) {
+    user.rarest = rarity;
+  }
 
-    let leveled = false;
-    while (user.xp >= xpNeeded(user.level)) {
-      user.xp -= xpNeeded(user.level);
-      user.level++;
-      leveled = true;
-    }
+  let leveled = false;
+  while (user.xp >= xpNeeded(user.level)) {
+    user.xp -= xpNeeded(user.level);
+    user.level++;
+    leveled = true;
+  }
 
-    const dice = giveDice(user);
+  const nextXP = xpNeeded(user.level);
 
-    saveData();
+  const dice = giveDice(user);
 
-    let reply =
+  saveData();
+
+  let reply =
 `🎲 ${rarity} [${result.display}]
-⭐ Level: ${user.level}
+⭐ Level ${user.level} | XP ${user.xp}/${nextXP} (+${xpGain})
 🔁 Rolls: ${user.rolls}
 🍀 Luck: x${luck.toFixed(2)}`;
 
-    if (dice) reply += `\n✨ Found: ${dice}`;
-    if (leveled) reply += `\n⬆️ Level up!`;
+  if (dice) reply += `\n✨ Found: ${dice}`;
+  if (leveled) reply += `\n⬆️ Level up!`;
 
-    return message.reply(reply);
-  }
-
+  return message.reply(reply);
+}
   // ---------------- INVENTORY ----------------
   if (message.content === "?inv") {
     const inv = user.inventory;
