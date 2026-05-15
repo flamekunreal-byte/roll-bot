@@ -185,71 +185,194 @@ client.on("messageCreate", async (msg) => {
           .addFields(
             { name: "✨ Rarity", value: `🎲 **${r.name}** ︱ ${r.display}` },
             { name: "📊 Progress", value: `⭐ Level: **${u.level}** ︱ 📈 ${u.xp}/${xpNeeded(u.level)} ︱ ➕ +${xpGain} XP` },
-            { name: "🔁 Stats", value: `🔁 Rolls: **${u.rolls}** ︱ 🍀 Luck: **x${luck.toFixed(2)}**` }
+            { name: "⚡ Rolling Stats", value: `🔁 Rolls: **${u.rolls}** ︱ 🍀 Luck: **x${luck.toFixed(2)}**` }
           )
       ]
     });
   }
 
-  // ================= GIVE DICE FIXED =================
-  if (msg.content.startsWith("?give dice")) {
-    const args = msg.content.split(" ");
-    const user = msg.mentions.users.first();
-    const amount = parseInt(args[args.length - 1]);
-    const type = args.slice(3, args.length - 1).join(" ");
+  // ================= PROFILE / CHECK =================
+  if (msg.content.startsWith("?check") || msg.content.startsWith("?profile")) {
+    const user = msg.mentions.users.first() || msg.author;
+    const p = getUser(user.id);
 
-    if (!user || !type || isNaN(amount)) {
-      return msg.reply("❌ ?give dice @user <type> <amount>");
-    }
-
-    const inv = getUser(user.id).inventory;
-
-    if (inv[type] === undefined) return msg.reply("❌ Invalid dice");
-
-    inv[type] += amount;
-    saveData();
-
-    return msg.reply(`🎁 Gave ${amount} ${type}`);
+    return msg.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(COLOR)
+          .setTitle(`📊 Profile - ${user.username}`)
+          .addFields(
+            { name: "⭐ Level", value: `${p.level}`, inline: true },
+            { name: "🔁 Rolls", value: `${p.rolls}`, inline: true },
+            { name: "🔁 Rebirths", value: `${p.rebirths}`, inline: true },
+            { name: "💎 Rarest", value: `${p.rarest || "None"}` }
+          )
+      ]
+    });
   }
 
-  // ================= REMOVE DICE FIXED =================
-  if (msg.content.startsWith("?remove dice")) {
-    const args = msg.content.split(" ");
-    const user = msg.mentions.users.first();
-    const amount = parseInt(args[args.length - 1]);
-    const type = args.slice(3, args.length - 1).join(" ");
+  // ================= INVENTORY =================
+  if (msg.content === "?inv") {
+    const inv = u.inventory;
 
-    if (!user || !type || isNaN(amount)) {
-      return msg.reply("❌ ?remove dice @user <type> <amount>");
-    }
-
-    const inv = getUser(user.id).inventory;
-
-    if (inv[type] === undefined) return msg.reply("❌ Invalid dice");
-
-    inv[type] = Math.max(0, inv[type] - amount);
-    saveData();
-
-    return msg.reply(`🗑️ Removed ${amount} ${type}`);
+    return msg.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(COLOR)
+          .setTitle("🎒 Inventory")
+          .setDescription(
+            `🎲 Lucky Dice: ${inv["Lucky Dice"]}\n` +
+            `🥇 Golden Lucky Dice: ${inv["Golden Lucky Dice"]}\n` +
+            `💎 Diamond Lucky Dice: ${inv["Diamond Lucky Dice"]}\n` +
+            `🌌 Cosmic Lucky Dice: ${inv["Cosmic Lucky Dice"]}`
+          )
+      ]
+    });
   }
 
-  // ================= ADMIN ROLLS =================
-  if (msg.content.startsWith("?rolls")) {
-    if (!isAdmin) return msg.reply("❌ No permission.");
+  // ================= USE =================
+  if (msg.content.startsWith("?use")) {
+    const input = msg.content.slice(4).trim();
 
+    const boosts = {
+      "lucky dice": 5,
+      "golden lucky dice": 25,
+      "diamond lucky dice": 100,
+      "cosmic lucky dice": 1000
+    };
+
+    const key = Object.keys(boosts).find(k => k === input.toLowerCase());
+
+    if (!key) return msg.reply("❌ Invalid item");
+    if (u.inventory[key] <= 0) return msg.reply("❌ You don't have this item");
+
+    u.inventory[key]--;
+    activeBoost[msg.author.id] = boosts[key];
+
+    saveData();
+
+    return msg.reply(`⚡ Used ${key}`);
+  }
+
+  // ================= REBIRTH =================
+  if (msg.content === "?rebirth") {
+    const req = Math.floor(1000 * Math.pow(2.5, u.rebirths));
+
+    if (u.rolls < req) return msg.reply(`Need ${req} rolls`);
+
+    pendingRebirth[msg.author.id] = true;
+    return msg.reply("Type ?rebirth confirm");
+  }
+
+  if (msg.content === "?rebirth confirm") {
+    if (!pendingRebirth[msg.author.id]) return;
+
+    u.rebirths++;
+    u.level = 1;
+    u.xp = 0;
+    u.rolls = 0;
+
+    pendingRebirth[msg.author.id] = false;
+    saveData();
+
+    return msg.reply("Rebirth complete");
+  }
+
+  // ================= ADMIN =================
+  if (msg.content.startsWith("?rolls") && isAdmin) {
     const args = msg.content.split(" ");
     const action = args[1];
     const amount = parseInt(args[2]);
-
-    if (!action || isNaN(amount)) {
-      return msg.reply("❌ ?rolls add/remove <amount>");
-    }
 
     if (action === "add") u.rolls += amount;
     if (action === "remove") u.rolls = Math.max(0, u.rolls - amount);
 
     saveData();
-    return msg.reply("✅ Done");
+    return msg.reply("Done");
+  }
+
+  if (msg.content.startsWith("?setrolls") && isAdmin) {
+    const user = msg.mentions.users.first();
+    const amount = parseInt(msg.content.split(" ")[2]);
+    getUser(user.id).rolls = amount;
+    saveData();
+    return msg.reply("Updated");
+  }
+
+  if (msg.content.startsWith("?setlevel") && isAdmin) {
+    const user = msg.mentions.users.first();
+    const amount = parseInt(msg.content.split(" ")[2]);
+    getUser(user.id).level = amount;
+    saveData();
+    return msg.reply("Updated");
+  }
+
+  if (msg.content.startsWith("?setrebirth") && isAdmin) {
+    const user = msg.mentions.users.first();
+    const amount = parseInt(msg.content.split(" ")[2]);
+    getUser(user.id).rebirths = amount;
+    saveData();
+    return msg.reply("Updated");
+  }
+
+  // ================= GIVE / REMOVE DICE FIXED =================
+  if (msg.content.startsWith("?give dice") && isAdmin) {
+    const args = msg.content.split(" ");
+    const user = msg.mentions.users.first();
+    const amount = parseInt(args[args.length - 1]);
+    const type = args.slice(3, args.length - 1).join(" ").toLowerCase();
+
+    if (!user || isNaN(amount)) return msg.reply("Usage error");
+
+    const inv = getUser(user.id).inventory;
+
+    const key = Object.keys(inv).find(k => k.toLowerCase() === type);
+    if (!key) return msg.reply("Invalid dice");
+
+    inv[key] += amount;
+    saveData();
+    return msg.reply("Gave dice");
+  }
+
+  if (msg.content.startsWith("?remove dice") && isAdmin) {
+    const args = msg.content.split(" ");
+    const user = msg.mentions.users.first();
+    const amount = parseInt(args[args.length - 1]);
+    const type = args.slice(3, args.length - 1).join(" ").toLowerCase();
+
+    if (!user || isNaN(amount)) return msg.reply("Usage error");
+
+    const inv = getUser(user.id).inventory;
+
+    const key = Object.keys(inv).find(k => k.toLowerCase() === type);
+    if (!key) return msg.reply("Invalid dice");
+
+    inv[key] = Math.max(0, inv[key] - amount);
+    saveData();
+    return msg.reply("Removed dice");
+  }
+
+  // ================= LEADERBOARD =================
+  if (msg.content === "?leaderboard") {
+    const entries = Object.entries(userData);
+
+    const topRolls = entries.sort((a,b)=>b[1].rolls-a[1].rolls).slice(0,5).map((x,i)=>`${i+1}. ${x[0]} - ${x[1].rolls}`).join("\n");
+    const topLevels = entries.sort((a,b)=>b[1].level-a[1].level).slice(0,5).map((x,i)=>`${i+1}. ${x[0]} - ${x[1].level}`).join("\n");
+
+    const topRare = entries.map(x=>x).slice(0,5).map((x,i)=>`${i+1}. ${x[0]} - ${x[1].rarest || "None"}`).join("\n");
+
+    return msg.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(COLOR)
+          .setTitle("📊 Leaderboards")
+          .addFields(
+            { name: "🔁 Rolls", value: topRolls || "None" },
+            { name: "⭐ Levels", value: topLevels || "None" },
+            { name: "💎 Rarest", value: topRare || "None" }
+          )
+      ]
+    });
   }
 });
 
