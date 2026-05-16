@@ -494,9 +494,11 @@ saveData();
 
 // ================= BOT =================
 client.on("messageCreate", async (msg) => {
-  if (msg.author.bot) return;
+  try {
 
-  const u = getUser(msg.author.id);
+    if (msg.author.bot) return;
+
+    const u = getUser(msg.author.id);
 
   //=============SET LUCK==================
   if (msg.content.startsWith("?setluck")) {
