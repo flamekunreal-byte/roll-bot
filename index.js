@@ -334,8 +334,15 @@ client.on("messageCreate", async (msg) => {
         startAutoroll(id);
       }
 
-      const boost = activeBoost[id] || 1;
-      delete activeBoost[id];
+      let boost = 1;
+
+if (
+  activeBoost[id] &&
+  activeBoost[id].length > 0
+) {
+  boost = activeBoost[id].shift();
+}
+      
 
       const luck = getLuck(u.level, u.rebirths) * boost;
 
