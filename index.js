@@ -846,7 +846,7 @@ if (msg.content.startsWith("?use")) {
   });
 }
  // ================= FORGE UI =================
-if (msg.content === "?forgeRecipes") {
+if (msg.content.toLowerCase().startsWith("?forgerecipes")) {
   return msg.reply({
     embeds: [
       new EmbedBuilder()
