@@ -465,17 +465,13 @@ if (
       value: `${r.name} [${r.display}]`,
       inline: false
     },
-    {
-      name: "📈Progress📈",
-      value:
-        `⭐Level: ${u.level}\n` +
-        {
+{
   name: "📈Progress📈",
   value:
-    `⭐Level: ${u.level}\n` +
-    `XP: ${formatNumber(u.xp)}/${formatNumber(xpNeeded(u.level))} [+${formatNumber(gain)}]`,
+`⭐Level: ${u.level}
+XP: ${formatNumber(u.xp)}/${formatNumber(xpNeeded(u.level))} [+${formatNumber(gain)}]`,
   inline: false
-},
+}
       inline: false
     },
     {
@@ -511,13 +507,7 @@ if (
         content: "",
         embeds: [embed]
       });
-
-      const role = roleRewards[r.name];
-
-      if (role) {
-        msg.member.roles.add(role).catch(() => {});
-     
-        // ================= AUTOROLL SUMMARY ON MANUAL ROLL =================
+// ================= AUTOROLL SUMMARY =================
 if (autorollLogs[id] && autorollLogs[id].length > 0) {
 
   const logs = autorollLogs[id];
@@ -540,33 +530,27 @@ if (autorollLogs[id] && autorollLogs[id].length > 0) {
   const channel = client.channels.cache.get(CHANNEL_ID);
 
   if (channel) {
-    const embed = new EmbedBuilder()
+    const summary = new EmbedBuilder()
       .setColor(0xFFDE10)
       .setTitle("⏳ Auto Roll Summary")
       .addFields(
         { name: "🎲 Times Rolled", value: `${totalRolls}`, inline: true },
-        {
-  name: "💎 Rarest Roll",
-  value:
-    highest
-      ? `${highest.name} (${highest.display})\nCount: ${u.owned[highest.name] || 0}`
-      : "None",
-  inline: true
-},
+        { name: "💎 Rarest Roll", value: highest ? `${highest.name} (${highest.display})` : "None", inline: true },
         { name: "📈 Points Gained", value: `${pointsGained.toLocaleString()}`, inline: true },
         { name: "⭐ Levels Gained", value: `${totalLevels}`, inline: true }
       )
       .setFooter({ text: "Autoroll System" })
       .setTimestamp();
 
-    channel.send({ embeds: [embed] }).catch(() => {});
+    channel.send({ embeds: [summary] }).catch(() => {});
   }
 }
-      }
+      
+      const role = roleRewards[r.name];
 
-      return;
-    }
-
+      if (role) {
+        msg.member.roles.add(role).catch(() => {});
+     
     // ================= STATS =================
 if (msg.content === "?stats") {
   return msg.reply(`
@@ -820,12 +804,12 @@ if (msg.content === "?rebirth") {
 • Max reduction: 5s total
 • Minimum autoroll speed: 5s`
     )
-    .addFields({
-      name: "📊 Your Progress",
-      value:
-🎲 Rolls: ${formatNumber(u.rolls)}/${formatNumber(req)}
+.addFields({
+  name: "📊 Your Progress",
+  value:
+`🎲 Rolls: ${formatNumber(u.rolls)}/${formatNumber(req)}
 🔄 Current Rebirths: ${u.rebirths}`
-    })
+})
     .setFooter({
       text: "Type ?rebirth confirm to rebirth"
     });
