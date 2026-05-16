@@ -156,10 +156,7 @@ function getTotalLuck(u) {
 function getAutoLuck(u) {
   const base = getLuck(u.level, u.rebirths);
 
-  // smooth scaling per progress
-  const rollFactor = Math.log10(u.rolls + 10);
-
-  return base * rollFactor;
+  return base;
 }
 
 //======SET LUCK======
