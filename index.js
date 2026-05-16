@@ -106,18 +106,32 @@ function getUser(id) {
       rebirths: 0,
       owned: {},
       rarest: null,
+
       inventory: {
         "Lucky Dice": 0,
         "Golden Lucky Dice": 0,
         "Diamond Lucky Dice": 0,
-        "Cosmic Lucky Dice": 0
-      }
+        "Cosmic Lucky Dice": 0,
+
+        // ===== FORGE MATERIALS (RARITIES) =====
+        "Reset I": 0,
+        "Gold Part I": 0,
+        "Rainbow Part I": 0,
+        "Dark Part I": 0,
+        "Tier I": 0,
+        "Automation I": 0,
+        "Deep Research I": 0,
+        "Eternal I": 0,
+        "Everything I": 0
+      },
+
+      // permanent upgrades
+      forges: {}
     };
   }
 
   return userData[id];
 }
-
 // ================= XP =================
 function xpNeeded(lv) {
   return Math.floor(5 * Math.pow(1.5, lv - 1));
@@ -169,6 +183,72 @@ const points = {
   "Everything I": 15000,
   "Everything II": 25000,
   "Everything III": 50000
+};
+
+// ===== CRAFTING SYSTEM =====
+const forgeRecipes = {
+  "Reset I": {
+    type: "luck",
+    boost: 2.5,
+    cost: 10,
+    stat: "luck"
+  },
+
+  "Gold Part I": {
+    type: "luck",
+    boost: 2.5,
+    cost: 10,
+    stat: "luck"
+  },
+
+  "Rainbow Part I": {
+    type: "roll",
+    boost: 2,
+    cost: 10,
+    stat: "rolls"
+  },
+
+  "Dark Part I": {
+    type: "resource",
+    boost: 1.5,
+    cost: 10,
+    stat: "resource"
+  },
+
+  "Tier I": {
+    type: "roll",
+    boost: 2,
+    cost: 10,
+    stat: "rolls"
+  },
+
+  "Automation I": {
+    type: "resource",
+    boost: 1.5,
+    cost: 10,
+    stat: "resource"
+  },
+
+  "Deep Research I": {
+    type: "luck",
+    boost: 4,
+    cost: 10,
+    stat: "luck"
+  },
+
+  "Eternal I": {
+    type: "luck",
+    boost: 3,
+    cost: 10,
+    stat: "luck"
+  },
+
+  "Everything I": {
+    type: "roll",
+    boost: 2,
+    cost: 10,
+    stat: "rolls"
+  }
 };
 
 // ================= DICE =================
@@ -420,13 +500,13 @@ if (
 }
       
 
-      const luck = getLuck(u.level, u.rebirths) * boost;
+      let luck = getLuck(u.level, u.rebirths) * boost; let extraRolls = 0;  // apply forge boosts if (u.forges) {   for (const f of Object.values(u.forges)) {      if (f.stat === "luck") {       luck *= f.boost;     }      if (f.stat === "rolls") {       extraRolls += f.boost;     }   } }
 
       let anim = await msg.reply("🎲 Rolling...");
 
       const r = roll(luck);
 
-      u.rolls++;
+      u.rolls += 1 + extraRolls;
 
       const gain = points[r.name] || 1;
 
@@ -800,6 +880,74 @@ if (msg.content.startsWith("?use")) {
     embeds: [embed]
   });
 }
+    
+// ================= FORGE =================
+if (msg.content.startsWith("?forge")) {
+
+  const args = msg.content.split(" ");
+  const item = args.slice(1).join(" ");
+
+  const recipe = forgeRecipes[item];
+
+  if (!recipe) {
+    return msg.reply(
+      "❌ Invalid forge item.\nTry: Reset I, Gold Part I, Rainbow Part I..."
+    );
+  }
+
+  const userInv = u.owned?.[item] || 0;
+
+  if (userInv < recipe.cost) {
+    return msg.reply(
+      `❌ You need ${recipe.cost}x ${item} (you have ${userInv})`
+    );
+  }
+
+  // consume items
+  u.owned[item] -= recipe.cost;
+
+  // apply permanent boost
+  if (!u.forges[item]) {
+    u.forges[item] = {
+      type: recipe.type,
+      boost: recipe.boost
+    };
+  }
+
+  saveData();
+
+  const embed = new EmbedBuilder()
+    .setColor(0xFFDE10)
+    .setTitle("⚒️ Forge Successful!")
+    .setDescription(
+      `You forged **${item}**`
+    )
+    .addFields(
+      {
+        name: "⚡ Boost Type",
+        value: recipe.type,
+        inline: true
+      },
+      {
+        name: "📈 Effect",
+        value:
+          recipe.stat === "rolls"
+            ? `+${recipe.boost} Rolls per roll`
+            : `${recipe.boost}x ${recipe.stat}`,
+        inline: true
+      },
+      {
+        name: "📦 Cost",
+        value: `${recipe.cost}x ${item}`,
+        inline: true
+      }
+    )
+    .setFooter({ text: "Permanent Upgrade Applied" })
+    .setTimestamp();
+
+  return msg.reply({ embeds: [embed] });
+}
+    
   // ================= REBIRTH =================
 if (msg.content === "?rebirth") {
 
