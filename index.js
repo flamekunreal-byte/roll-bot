@@ -938,8 +938,9 @@ if (isAdmin) {
   }
 }
 
- // ================= RAREST LEADERBOARD =================
+// ================= RAREST LEADERBOARD =================
 if (msg.content.trim() === "?leaderboard") {
+
   const entries = Object.entries(userData);
 
   const getName = (id) =>
@@ -986,7 +987,7 @@ if (msg.content.trim() === "?leaderboard") {
   });
 }
 
-  } catch (err) {
+   catch (err) {
     console.error(err);
     msg.reply("An error occurred.");
   }
