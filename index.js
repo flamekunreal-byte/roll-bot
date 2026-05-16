@@ -174,73 +174,84 @@ const points = {
   "Everything III": 50000
 };
 
-//====== FORGE BOOST TABLE ======
-const forgeBoosts = {
-  "Reset I": { type: "luck", value: 2.5 },
-  "Gold Part I": { type: "luck", value: 2.5 },
-
-  "Rainbow Part I": { type: "rolls", value: 2 },
-  "Tier I": { type: "rolls", value: 2 },
-  "Everything I": { type: "rolls", value: 2 },
-
-  "Dark Part I": { type: "resource", value: 1.5 },
-  "Automation I": { type: "resource", value: 1.5 },
-
-  "Deep Research I": { type: "luck", value: 4 },
-  "Eternal I": { type: "luck", value: 3 }
-};
-
 // ===== CRAFTING SYSTEM =====
 const forgeRecipes = {
-  "Reset I": {
+
+  "Luck Glove": {
+    item: "Reset I",
+    emoji: "🧤",
     type: "luck",
     boost: 2.5,
     cost: 10,
     desc: "2.5x Luck"
   },
-  "Gold Part I": {
+
+  "Golden Clover": {
+    item: "Gold Part I",
+    emoji: "🍀",
     type: "luck",
     boost: 2.5,
     cost: 10,
     desc: "2.5x Luck"
   },
-  "Rainbow Part I": {
+
+  "Rainbow Engine": {
+    item: "Rainbow Part I",
+    emoji: "🌈",
     type: "roll",
     boost: 2,
     cost: 10,
     desc: "+2 Rolls per roll"
   },
-  "Dark Part I": {
+
+  "Shadow Core": {
+    item: "Dark Part I",
+    emoji: "🌑",
     type: "resource",
     boost: 1.5,
     cost: 10,
     desc: "1.5x Resource gain"
   },
-  "Tier I": {
+
+  "Tier Accelerator": {
+    item: "Tier I",
+    emoji: "💠",
     type: "roll",
     boost: 2,
     cost: 10,
     desc: "+2 Rolls per roll"
   },
-  "Automation I": {
+
+  "Auto Reactor": {
+    item: "Automation I",
+    emoji: "🤖",
     type: "resource",
     boost: 1.5,
     cost: 10,
     desc: "1.5x Resource gain"
   },
-  "Deep Research I": {
+
+  "Research Brain": {
+    item: "Deep Research I",
+    emoji: "🧠",
     type: "luck",
     boost: 4,
     cost: 10,
     desc: "4x Luck"
   },
-  "Eternal I": {
+
+  "Eternal Orb": {
+    item: "Eternal I",
+    emoji: "♾️",
     type: "luck",
     boost: 3,
     cost: 10,
     desc: "3x Luck"
   },
-  "Everything I": {
+
+  "Galaxy Roller": {
+    item: "Everything I",
+    emoji: "🌌",
     type: "roll",
     boost: 2,
     cost: 10,
