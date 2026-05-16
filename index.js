@@ -159,24 +159,6 @@ function getAutoLuck(u) {
   return base;
 }
 
-// ====== SET LUCK ======
-if (msg.content.startsWith("?setluck")) {
-  const u = getUser(msg.author.id);
-
-  const args = msg.content.split(" ");
-  const value = Number(args[1]);
-
-  if (!value || value <= 0) {
-    return msg.reply("❌ Usage: ?setluck <number>");
-  }
-
-  u.selectedLuck = value;
-
-  saveData();
-
-  return msg.reply(`🎯 Luck cap set to **${value}**`);
-}
-
 // ================= XP =================
 function xpNeeded(lv) {
   return Math.floor(5 * Math.pow(1.5, lv - 1));
