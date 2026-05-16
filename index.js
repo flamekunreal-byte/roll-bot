@@ -112,30 +112,15 @@ function getUser(id) {
         "Golden Lucky Dice": 0,
         "Diamond Lucky Dice": 0,
         "Cosmic Lucky Dice": 0
-    };
-  }
+      },
 
-  return userData[id];
-}
-
-// ===== FORGE SYSTEM =====
-  "Reset I": 0,
-  "Gold Part I": 0,
-  "Rainbow Part I": 0,
-  "Dark Part I": 0,
-  "Tier I": 0,
-  "Automation I": 0,
-  "Deep Research I": 0,
-  "Eternal I": 0,
-  "Everything I": 0
-}
-      // permanent upgrades
       forges: {}
     };
   }
 
   return userData[id];
 }
+
 // ================= XP =================
 function xpNeeded(lv) {
   return Math.floor(5 * Math.pow(1.5, lv - 1));
@@ -218,7 +203,7 @@ const forgeRecipes = {
   "Everything I":   { type: "roll", boost: 2, cost: 10 }
 };
 
-if (msg.content.startsWith("?forge")) {
+if (msg.content.startsWith("?forgeRecipes")) {
 
   const item = msg.content.slice(6).trim();
 
@@ -526,14 +511,9 @@ client.on("messageCreate", async (msg) => {
 
 let boost = 1;
 
-if (Array.isArray(activeBoost[id]) && activeBoost[id].length > 0) {
+if (activeBoost[id]?.length > 0) {
   boost = activeBoost[id].shift();
 }
-  boost = activeBoost[id].shift();
-}
-      
-let luck = getLuck(u.level, u.rebirths) * boost;
-let extraRolls = 0;
 
 // ===== FORGE LOOP (PERMANENT UPGRADES) =====
 let luck = getLuck(u.level, u.rebirths) * boost;
@@ -933,7 +913,9 @@ if (msg.content.startsWith("?use")) {
   });
 }
  // ================= FORGE UI =================
-  return msg.reply({
+  if (msg.content === "?forgeRecipes") {
+  return msg.reply(...);
+}
     embeds: [
       new EmbedBuilder()
         .setColor(0xFFDE10)
@@ -1192,18 +1174,7 @@ if (msg.content === "?leaderboard") {
   };
 
   // ===== FORMAT NUMBER (K/M/B) =====
-  const formatNumber = (num) => {
-    if (num === null || num === undefined) return "0";
-
-    const abs = Math.abs(num);
-
-    if (abs >= 1e12) return (num / 1e12).toFixed(2).replace(/\.00$/, "") + "T";
-    if (abs >= 1e9) return (num / 1e9).toFixed(2).replace(/\.00$/, "") + "B";
-    if (abs >= 1e6) return (num / 1e6).toFixed(2).replace(/\.00$/, "") + "M";
-    if (abs >= 1e3) return (num / 1e3).toFixed(2).replace(/\.00$/, "") + "K";
-
-    return num.toString();
-  };
+value: `${formatNumber(totalRolls)}`
 
   const leaderboard = [...entries]
     .sort((a, b) => {
