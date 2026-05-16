@@ -468,7 +468,7 @@ if (
       name: "📈Progress📈",
       value:
         `⭐Level: ${u.level}\n` +
-        XP: ${formatNumber(u.xp)}/${formatNumber(xpNeeded(u.level))} [+${formatNumber(gain)}]
+        XP: ${u.xp}/${xpNeeded(u.level)} [+${gain}]
       inline: false
     },
     {
