@@ -497,11 +497,6 @@ client.on("messageCreate", async (msg) => {
   if (msg.author.bot) return;
 
   const u = getUser(msg.author.id);
-
-  // ===== ROLL =====
-  if (msg.content === "?roll") {
-    // roll code
-  }
   
   // ===== SET LUCK =====
   if (msg.content.startsWith("?setluck")) {
@@ -530,9 +525,10 @@ client.on("messageCreate", async (msg) => {
 
     const u = getUser(id);
 
-    const isAdmin = msg.member.permissions.has(
-      PermissionFlagsBits.Administrator
-    );
+  const isAdmin =
+  msg.member?.permissions?.has(
+    PermissionFlagsBits.Administrator
+  );
 
     lastSeen[id] = Date.now();
 
