@@ -114,16 +114,15 @@ function getUser(id) {
         "Cosmic Lucky Dice": 0
       },
 
-      forges: {}
+      forges: {},
 
       maxLuck: 1000000,
-selectedLuck: 1,
+      selectedLuck: 1
     };
   }
 
   return userData[id];
 }
-
 // ================= XP =================
 function xpNeeded(lv) {
   return Math.floor(5 * Math.pow(1.5, lv - 1));
