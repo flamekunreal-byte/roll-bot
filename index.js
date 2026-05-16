@@ -993,7 +993,6 @@ if (msg.content === "?forgerecipes") {
     ]
   });
 }
-}
     
 // ================= FORGE =================
 if (msg.content.startsWith("?forge ")) {
@@ -1238,9 +1237,6 @@ if (msg.content === "?leaderboard") {
     if (!u.rarest) return 0;
     return u.owned?.[u.rarest] || 0;
   };
-
-  // ===== FORMAT NUMBER (K/M/B) =====
-value: `${formatNumber(totalRolls)}`
 
   const leaderboard = [...entries]
     .sort((a, b) => {
