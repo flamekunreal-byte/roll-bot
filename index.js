@@ -938,13 +938,15 @@ if (isAdmin) {
   }
 }
 
-    // ================= RAREST LEADERBOARD =================
-    if (msg.content.trim() === "?leaderboard")
+ // ================= RAREST LEADERBOARD =================
+if (msg.content.trim() === "?leaderboard") {
 
-      const entries = Object.entries(userData);
+  const entries = Object.entries(userData);
 
-      const getName = (id) =>
-        msg.guild.members.cache.get(id)?.displayName || "Unknown";
+  const getName = (id) =>
+    msg.guild.members.cache.get(id)?.displayName || "Unknown";
+
+}
 
       const getRarestValue = (u) => {
         if (!u.rarest) return 0;
