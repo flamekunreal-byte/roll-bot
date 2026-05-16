@@ -113,18 +113,21 @@ function getUser(id) {
         "Diamond Lucky Dice": 0,
         "Cosmic Lucky Dice": 0,
 
-        // ===== FORGE MATERIALS (RARITIES) =====
-        "Reset I": 0,
-        "Gold Part I": 0,
-        "Rainbow Part I": 0,
-        "Dark Part I": 0,
-        "Tier I": 0,
-        "Automation I": 0,
-        "Deep Research I": 0,
-        "Eternal I": 0,
-        "Everything I": 0
-      },
+   inventory: { ... },
+rarest: null,
 
+// ===== FORGE SYSTEM =====
+forges: {
+  "Reset I": 0,
+  "Gold Part I": 0,
+  "Rainbow Part I": 0,
+  "Dark Part I": 0,
+  "Tier I": 0,
+  "Automation I": 0,
+  "Deep Research I": 0,
+  "Eternal I": 0,
+  "Everything I": 0
+}
       // permanent upgrades
       forges: {}
     };
@@ -183,6 +186,22 @@ const points = {
   "Everything I": 15000,
   "Everything II": 25000,
   "Everything III": 50000
+};
+
+//====== FORGE BOOST TABLE ======
+const forgeBoosts = {
+  "Reset I": { type: "luck", value: 2.5 },
+  "Gold Part I": { type: "luck", value: 2.5 },
+
+  "Rainbow Part I": { type: "rolls", value: 2 },
+  "Tier I": { type: "rolls", value: 2 },
+  "Everything I": { type: "rolls", value: 2 },
+
+  "Dark Part I": { type: "resource", value: 1.5 },
+  "Automation I": { type: "resource", value: 1.5 },
+
+  "Deep Research I": { type: "luck", value: 4 },
+  "Eternal I": { type: "luck", value: 3 }
 };
 
 // ===== CRAFTING SYSTEM =====
@@ -250,6 +269,70 @@ const forgeRecipes = {
     stat: "rolls"
   }
 };
+
+if (msg.content.startsWith("?forge")) {
+
+  const item = msg.content.slice(6).trim();
+
+  const u = getUser(msg.author.id);
+
+  const recipe = {
+    "Reset I": "Reset I",
+    "Gold Part I": "Gold Part I",
+    "Rainbow Part I": "Rainbow Part I",
+    "Dark Part I": "Dark Part I",
+    "Tier I": "Tier I",
+    "Automation I": "Automation I",
+    "Deep Research I": "Deep Research I",
+    "Eternal I": "Eternal I",
+    "Everything I": "Everything I"
+  }[item];
+
+  if (!recipe) {
+    return msg.reply("❌ Invalid forge item");
+  }
+
+  // check ownership
+  if (!u.owned[recipe] || u.owned[recipe] < 10) {
+    return msg.reply(`❌ You need x10 ${recipe}`);
+  }
+
+  // consume items
+  u.owned[recipe] -= 10;
+
+  // apply forge (ONE TIME ONLY)
+  if (!u.forges[item]) u.forges[item] = 0;
+  if (u.forges[item] >= 1) {
+    return msg.reply("❌ Already forged");
+  }
+
+  u.forges[item] = 1;
+
+  saveData();
+
+  const boost = forgeBoosts[item];
+
+  return msg.reply({
+    embeds: [
+      new EmbedBuilder()
+        .setColor(0xFFDE10)
+        .setTitle("⚒️ Forge Successful")
+        .setDescription(
+          `**${item} upgraded!**\n\nBoost applied permanently.`
+        )
+        .addFields({
+          name: "⚡ Effect",
+          value:
+            boost.type === "luck"
+              ? `${boost.value}x Luck`
+              : boost.type === "rolls"
+              ? `+${boost.value} Rolls per roll`
+              : `${boost.value}x Resource Luck`
+        })
+        .setFooter({ text: "Permanent Upgrade System" })
+    ]
+  });
+}
 
 // ================= DICE =================
 function giveDice(user) {
@@ -529,7 +612,7 @@ if (
         leveled = true;
       }
 
-      const dice = giveDice(u);
+      const dice = giveDice(u, resourceBoost);
 
       saveData();
 
@@ -878,6 +961,56 @@ if (msg.content.startsWith("?use")) {
 
   return msg.reply({
     embeds: [embed]
+  });
+}
+    if (msg.content === "?forges") {
+
+  return msg.reply({
+    embeds: [
+      new EmbedBuilder()
+        .setColor(0xFFDE10)
+        .setTitle("⚒️ Crafting System")
+        .setDescription("Permanent upgrades unlocked via forging")
+        .addFields(
+          {
+            name: "Reset I",
+            value: "Boost: 2.5x Luck\nRecipe: x10 Reset I\nCommand: ?forge Reset I"
+          },
+          {
+            name: "Gold Part I",
+            value: "Boost: 2.5x Luck\nRecipe: x10 Gold Part I\nCommand: ?forge Gold Part I"
+          },
+          {
+            name: "Rainbow Part I",
+            value: "Boost: 2x Rolls\nRecipe: x10 Rainbow Part I\nCommand: ?forge Rainbow Part I"
+          },
+          {
+            name: "Dark Part I",
+            value: "Boost: 1.5x Resource Luck\nRecipe: x10 Dark Part I\nCommand: ?forge Dark Part I"
+          },
+          {
+            name: "Tier I",
+            value: "Boost: 2x Rolls\nRecipe: x10 Tier I\nCommand: ?forge Tier I"
+          },
+          {
+            name: "Automation I",
+            value: "Boost: 1.5x Resource Luck\nRecipe: x10 Automation I\nCommand: ?forge Automation I"
+          },
+          {
+            name: "Deep Research I",
+            value: "Boost: 4x Luck\nRecipe: x10 Deep Research I\nCommand: ?forge Deep Research I"
+          },
+          {
+            name: "Eternal I",
+            value: "Boost: 3x Luck\nRecipe: x10 Eternal I\nCommand: ?forge Eternal I"
+          },
+          {
+            name: "Everything I",
+            value: "Boost: 2x Rolls\nRecipe: x10 Everything I\nCommand: ?forge Everything I"
+          }
+        )
+        .setFooter({ text: "All upgrades are permanent" })
+    ]
   });
 }
     
