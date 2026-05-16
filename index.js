@@ -33,30 +33,42 @@ const roleRewards = {
   "Part I": "1504750381539004477",
   "Part II": "1504750412132253807",
   "Part III": "1504750442029256714",
+
   "Reset I": "1504750482449764422",
   "Reset II": "1504750515613995089",
   "Reset III": "1504750540892934164",
+
   "Gold Part I": "1504750609285386280",
   "Gold Part II": "1504750658157281451",
   "Gold Part III": "1504750678961033257",
+
   "Rainbow Part I": "1504750984553824326",
   "Rainbow Part II": "1504751068242771968",
   "Rainbow Part III": "1504751085980745759",
+
   "Dark Part I": "1504751136815579246",
   "Dark Part II": "1504751199168237709",
   "Dark Part III": "1504751221884452895",
+
   "Tier I": "1504751280554246247",
   "Tier II": "1504751329808220180",
   "Tier III": "1504751354156027915",
+
   "Automation I": "1504751406589153372",
   "Automation II": "1504751456388124732",
   "Automation III": "1504751471957114980",
+
   "Deep Research I": "1504751515599114240",
   "Deep Research II": "1504751560356528269",
   "Deep Research III": "1504751581336440972",
+
   "Everything I": "1504751610167951470",
   "Everything II": "1504751729076473966",
-  "Everything III": "1504751748986962030"
+  "Everything III": "1504751748986962030",
+
+  "Eternal I": "1505140670250090536",
+  "Eternal II": "1505140707420143698",
+  "Eternal III": "1505140744267104296"
 };
 
 // ================= SAVE =================
@@ -108,30 +120,42 @@ const points = {
   "Part I": 1,
   "Part II": 2,
   "Part III": 3,
+
   "Reset I": 5,
   "Reset II": 7,
   "Reset III": 10,
+
   "Gold Part I": 15,
   "Gold Part II": 20,
   "Gold Part III": 25,
+
   "Rainbow Part I": 50,
   "Rainbow Part II": 65,
   "Rainbow Part III": 80,
+
   "Dark Part I": 100,
   "Dark Part II": 150,
   "Dark Part III": 200,
+
   "Tier I": 300,
   "Tier II": 400,
   "Tier III": 500,
+
   "Automation I": 650,
   "Automation II": 800,
   "Automation III": 1000,
+
   "Deep Research I": 1500,
   "Deep Research II": 2500,
   "Deep Research III": 3500,
-  "Everything I": 5000,
-  "Everything II": 7500,
-  "Everything III": 10000
+
+  "Eternal I": 5000,
+  "Eternal II": 7500,
+  "Eternal III": 10000,
+
+  "Everything I": 15000,
+  "Everything II": 25000,
+  "Everything III": 50000
 };
 
 // ================= DICE =================
@@ -163,24 +187,63 @@ function giveDice(user) {
 
 // ================= ROLL =================
 function roll(luck) {
+
   const c = (p, n, d) =>
-    Math.random() < p * luck
+    Math.random() < Math.min(p * luck, 1)
       ? { name: n, display: d }
       : null;
 
   return (
-    c(1e-8, "Everything III", "1/100M") ||
-    c(1e-7, "Everything II", "1/10M") ||
-    c(5e-7, "Everything I", "1/5M") ||
-    c(2e-6, "Deep Research III", "1/2M") ||
+
+    // ===== EVERYTHING (RARER THAN ETERNAL) =====
+    c(1e-12, "Everything III", "1/1T") ||
+    c(2e-11, "Everything II", "1/50B") ||
+    c(4e-10, "Everything I", "1/2.5B") ||
+
+    // ===== ETERNAL =====
+    c(1e-9, "Eternal III", "1/1B") ||
+    c(1e-8, "Eternal II", "1/100M") ||
+    c(2e-7, "Eternal I", "1/5M") ||
+
+    // ===== DEEP RESEARCH =====
+    c(5e-7, "Deep Research III", "1/2M") ||
     c(1e-6, "Deep Research II", "1/1M") ||
-    c(7.5e-6, "Deep Research I", "1/750K") ||
-    c(5e-6, "Automation III", "1/500K") ||
-    c(2.5e-5, "Automation II", "1/250K") ||
-    c(1.5e-5, "Automation I", "1/150K") ||
-    c(1e-4, "Tier III", "1/100K") ||
-    c(7.5e-4, "Tier II", "1/75K") ||
-    c(5e-4, "Tier I", "1/50K") ||
+    c(1.333333e-6, "Deep Research I", "1/750K") ||
+
+    // ===== AUTOMATION =====
+    c(2e-6, "Automation III", "1/500K") ||
+    c(4e-6, "Automation II", "1/250K") ||
+    c(6.666666e-6, "Automation I", "1/150K") ||
+
+    // ===== TIER =====
+    c(1e-5, "Tier III", "1/100K") ||
+    c(1.333333e-5, "Tier II", "1/75K") ||
+    c(2e-5, "Tier I", "1/50K") ||
+
+    // ===== DARK PART =====
+    c(3.333333e-5, "Dark Part III", "1/30K") ||
+    c(6.666666e-5, "Dark Part II", "1/15K") ||
+    c(1.428571e-4, "Dark Part I", "1/7K") ||
+
+    // ===== RAINBOW PART =====
+    c(2.5e-4, "Rainbow Part III", "1/4K") ||
+    c(5e-4, "Rainbow Part II", "1/2K") ||
+    c(1e-3, "Rainbow Part I", "1/1K") ||
+
+    // ===== GOLD PART =====
+    c(1.666666e-3, "Gold Part III", "1/600") ||
+    c(3.333333e-3, "Gold Part II", "1/300") ||
+    c(6.666666e-3, "Gold Part I", "1/150") ||
+
+    // ===== RESET =====
+    c(1.333333e-2, "Reset III", "1/75") ||
+    c(2.5e-2, "Reset II", "1/40") ||
+    c(5e-2, "Reset I", "1/20") ||
+
+    // ===== PART =====
+    c(0.1, "Part III", "1/10") ||
+    c(0.1666666, "Part II", "1/6") ||
+
     { name: "Part I", display: "1/3" }
   );
 }
@@ -462,7 +525,14 @@ if (autorollLogs[id] && autorollLogs[id].length > 0) {
       .setTitle("⏳ Auto Roll Summary")
       .addFields(
         { name: "🎲 Times Rolled", value: `${totalRolls}`, inline: true },
-        { name: "💎 Rarest Roll", value: highest ? `${highest.name} (${highest.display})` : "None", inline: true },
+        {
+  name: "💎 Rarest Roll",
+  value:
+    highest
+      ? `${highest.name} (${highest.display})\nCount: ${u.owned[highest.name] || 0}`
+      : "None",
+  inline: true
+},
         { name: "📈 Points Gained", value: `${pointsGained.toLocaleString()}`, inline: true },
         { name: "⭐ Levels Gained", value: `${totalLevels}`, inline: true }
       )
