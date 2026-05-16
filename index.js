@@ -548,81 +548,116 @@ client.on("messageCreate", async (msg) => {
       `);
     }
 
-      //======AUTO LUCK======
-if (msg.content === "?autoluck") {
+//======AUTO LUCK======
+if (msg.content.startsWith("?autoluck")) {
   const u = getUser(msg.author.id);
 
-  u.autoLuck = !u.autoLuck;
+  const args = msg.content.trim().split(/\s+/).slice(1);
+  const mode = args[0]?.toLowerCase();
 
-  saveData();
+  // TOGGLE (no argument)
+  if (!mode) {
+    u.autoLuck = !u.autoLuck;
 
-  return msg.reply(
-    `⚡ Auto Luck Mode: **${u.autoLuck ? "ON" : "OFF"}**`
-  );
-}
-    
-    // ================= ROLL =================
-    if (msg.content === "?roll") {
-      if (u.rebirths >= 1) {
-        startAutoroll(id);
-      }
+    saveData();
 
-let boost = 1;
-
-if (activeBoost[id]?.length > 0) {
-  boost = activeBoost[id].shift();
-}
-
-const baseLuck = getLuck(u.level, u.rebirths) * boost;
-
-const autoLuck = getAutoLuck(u) * boost;
-
-const luck = u.autoLuck
-  ? autoLuck
-  : Math.min(baseLuck, u.selectedLuck ?? Infinity);
-
-  Math.min(baseLuck, u.selectedLuck || u.maxLuck);
-let extraRolls = 0;
-
-if (u.forges) {
-  for (const f of Object.values(u.forges)) {
-
-    if (!f) continue;
-
-    if (f.type === "luck") {
-      luck *= f.boost;
-    }
-
-    if (f.type === "roll") {
-      extraRolls += f.boost;
-    }
-  }
-}
-      
-// ================= SET LUCK =================
-if (msg.content.startsWith("?setluck")) {
-
-  const input = msg.content.split(" ")[1];
-
-  const amount = parseLuck(input);
-
-  if (!amount || isNaN(amount) || amount <= 0) {
-    return msg.reply("❌ Invalid luck amount");
-  }
-
-  if (amount > u.maxLuck) {
     return msg.reply(
-      `❌ Max luck is x${formatNumber(u.maxLuck)}`
+      `⚡ Auto Luck Mode: **${u.autoLuck ? "ON" : "OFF"}**`
     );
   }
 
-  u.selectedLuck = amount;
+  // ON
+  if (mode === "on") {
+    u.autoLuck = true;
+    saveData();
+    return msg.reply("⚡ Auto Luck Mode: **ON**");
+  }
+
+  // OFF
+  if (mode === "off") {
+    u.autoLuck = false;
+    saveData();
+    return msg.reply("⚡ Auto Luck Mode: **OFF**");
+  }
+
+  // STATUS
+  if (mode === "status") {
+    const luck = u.autoLuck
+      ? getAutoLuck(u)
+      : getLuck(u.level, u.rebirths);
+
+    return msg.reply(
+      `⚡ Auto Luck: **${u.autoLuck ? "ON" : "OFF"}**\n` +
+      `🎲 Current Luck: **${luck.toFixed(2)}**`
+    );
+  }
+
+  return msg.reply("Usage: ?autoluck [on/off/status]");
+}
+    
+// ================= ROLL =================
+if (msg.content === "?roll") {
+  if (u.rebirths >= 1) {
+    startAutoroll(id);
+  }
+
+  let boost = 1;
+
+  if (activeBoost[id]?.length > 0) {
+    boost = activeBoost[id].shift();
+  }
+
+  const baseLuck = getLuck(u.level, u.rebirths) * boost;
+  const autoLuck = getAutoLuck(u) * boost;
+
+  let luck = u.autoLuck
+    ? autoLuck
+    : baseLuck;
+
+  // ================= SETLUCK CAP (PUT IT HERE) =================
+  if (!u.autoLuck && u.selectedLuck != null) {
+    luck = Math.min(luck, u.selectedLuck);
+  }
+
+  let extraRolls = 0;
+
+  if (u.forges) {
+    for (const f of Object.values(u.forges)) {
+      if (!f) continue;
+
+      if (f.type === "luck") {
+        luck *= f.boost;
+      }
+
+      if (f.type === "roll") {
+        extraRolls += f.boost;
+      }
+    }
+  }
+      
+//======SET LUCK======
+if (msg.content.startsWith("?setluck")) {
+  const u = getUser(msg.author.id);
+
+  const args = msg.content.trim().split(/\s+/).slice(1);
+  const value = parseFloat(args[0]);
+
+  // No input
+  if (!args[0]) {
+    return msg.reply("Usage: ?setluck <number>");
+  }
+
+  // Invalid number
+  if (isNaN(value)) {
+    return msg.reply("❌ Please enter a valid number.");
+  }
+
+  // Set luck value
+  u.selectedLuck = value;
 
   saveData();
 
-  return msg.reply(
-    `✅ Selected luck set to x${formatNumber(amount)}`
-  );
+  return msg.reply(`🎯 Selected Luck set to **${value}**`);
 }
       
      // ========ROLL==========
