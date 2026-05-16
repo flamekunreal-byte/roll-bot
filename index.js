@@ -986,8 +986,10 @@ if (msg.content.trim() === "?leaderboard") {
     ]
   });
 }
+client.on("messageCreate", async (msg) => {
+  try {
 
-   catch (err) {
+  } catch (err) {
     console.error(err);
     msg.reply("An error occurred.");
   }
