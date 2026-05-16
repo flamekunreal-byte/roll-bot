@@ -203,69 +203,6 @@ const forgeRecipes = {
   "Everything I":   { type: "roll", boost: 2, cost: 10 }
 };
 
-  const item = msg.content.slice(6).trim();
-
-  const u = getUser(msg.author.id);
-
-  const recipe = {
-    "Reset I": "Reset I",
-    "Gold Part I": "Gold Part I",
-    "Rainbow Part I": "Rainbow Part I",
-    "Dark Part I": "Dark Part I",
-    "Tier I": "Tier I",
-    "Automation I": "Automation I",
-    "Deep Research I": "Deep Research I",
-    "Eternal I": "Eternal I",
-    "Everything I": "Everything I"
-  }[item];
-
-  if (!recipe) {
-    return msg.reply("❌ Invalid forge item");
-  }
-
-  // check ownership
-  if (!u.owned[recipe] || u.owned[recipe] < 10) {
-    return msg.reply(`❌ You need x10 ${recipe}`);
-  }
-
-  // consume items
-  u.owned[recipe] -= 10;
-
-  // apply forge (ONE TIME ONLY)
-if (u.forges[item]) {
-  return msg.reply("❌ Already forged");
-}
-
-u.forges[item] = {
-  type: recipe.type,
-  boost: recipe.boost
-};
-
-  saveData();
-
-  const boost = forgeBoosts[item];
-
-  return msg.reply({
-    embeds: [
-      new EmbedBuilder()
-        .setColor(0xFFDE10)
-        .setTitle("⚒️ Forge Successful")
-        .setDescription(
-          `**${item} upgraded!**\n\nBoost applied permanently.`
-        )
-        .addFields({
-          name: "⚡ Effect",
-          value:
-            boost.type === "luck"
-              ? `${boost.value}x Luck`
-              : boost.type === "rolls"
-              ? `+${boost.value} Rolls per roll`
-              : `${boost.value}x Resource Luck`
-        })
-        .setFooter({ text: "Permanent Upgrade System" })
-    ]
-  });
-
 // ================= DICE =================
 function giveDice(user) {
   const r = Math.random();
