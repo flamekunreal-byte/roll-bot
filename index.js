@@ -522,8 +522,6 @@ client.on("messageCreate", async (msg) => {
 
     const id = msg.author.id;
 
-    const u = getUser(id);
-
   const isAdmin =
   msg.member?.permissions?.has(
     PermissionFlagsBits.Administrator
@@ -546,7 +544,6 @@ client.on("messageCreate", async (msg) => {
 
 //======AUTO LUCK======
 if (msg.content.startsWith("?autoluck")) {
-  u
 
   const args = msg.content.trim().split(/\s+/).slice(1);
   const mode = args[0]?.toLowerCase();
@@ -1144,12 +1141,6 @@ u.forges[item] = {
   type: recipe.type,
   boost: recipe.boost
 };
-
-  // save forge
-  u.forges[item] = {
-    type: recipe.type,
-    boost: recipe.boost
-  };
 
   saveData();
 
