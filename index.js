@@ -111,10 +111,15 @@ function getUser(id) {
         "Lucky Dice": 0,
         "Golden Lucky Dice": 0,
         "Diamond Lucky Dice": 0,
-        "Cosmic Lucky Dice": 0,
+        "Cosmic Lucky Dice": 0
+      },
 
-   inventory: { ... },
-rarest: null,
+      forges: {} // permanent upgrades ONLY
+    };
+  }
+
+  return userData[id];
+}
 
 // ===== FORGE SYSTEM =====
 forges: {
@@ -206,68 +211,15 @@ const forgeBoosts = {
 
 // ===== CRAFTING SYSTEM =====
 const forgeRecipes = {
-  "Reset I": {
-    type: "luck",
-    boost: 2.5,
-    cost: 10,
-    stat: "luck"
-  },
-
-  "Gold Part I": {
-    type: "luck",
-    boost: 2.5,
-    cost: 10,
-    stat: "luck"
-  },
-
-  "Rainbow Part I": {
-    type: "roll",
-    boost: 2,
-    cost: 10,
-    stat: "rolls"
-  },
-
-  "Dark Part I": {
-    type: "resource",
-    boost: 1.5,
-    cost: 10,
-    stat: "resource"
-  },
-
-  "Tier I": {
-    type: "roll",
-    boost: 2,
-    cost: 10,
-    stat: "rolls"
-  },
-
-  "Automation I": {
-    type: "resource",
-    boost: 1.5,
-    cost: 10,
-    stat: "resource"
-  },
-
-  "Deep Research I": {
-    type: "luck",
-    boost: 4,
-    cost: 10,
-    stat: "luck"
-  },
-
-  "Eternal I": {
-    type: "luck",
-    boost: 3,
-    cost: 10,
-    stat: "luck"
-  },
-
-  "Everything I": {
-    type: "roll",
-    boost: 2,
-    cost: 10,
-    stat: "rolls"
-  }
+  "Reset I":        { type: "luck", boost: 2.5, cost: 10 },
+  "Gold Part I":    { type: "luck", boost: 2.5, cost: 10 },
+  "Rainbow Part I": { type: "roll", boost: 2, cost: 10 },
+  "Dark Part I":    { type: "resource", boost: 1.5, cost: 10 },
+  "Tier I":         { type: "roll", boost: 2, cost: 10 },
+  "Automation I":   { type: "resource", boost: 1.5, cost: 10 },
+  "Deep Research I":{ type: "luck", boost: 4, cost: 10 },
+  "Eternal I":      { type: "luck", boost: 3, cost: 10 },
+  "Everything I":   { type: "roll", boost: 2, cost: 10 }
 };
 
 if (msg.content.startsWith("?forges")) {
@@ -585,9 +537,31 @@ if (
   boost = activeBoost[id].shift();
 }
       
+let luck = getLuck(u.level, u.rebirths) * boost;
+let extraRolls = 0;
 
-      let luck = getLuck(u.level, u.rebirths) * boost; let extraRolls = 0;  // apply forge boosts if (u.forges) {   for (const f of Object.values(u.forges)) {      if (f.type === "luck") luck *= f.boost;
-if (f.type === "roll") extraRolls += f.boost; {       luck *= f.boost;     }      if (f.stat === "rolls") {       extraRolls += f.boost;     }   } }
+// ===== FORGE LOOP (PERMANENT UPGRADES) =====
+if (u.forges) {
+  for (const f of Object.values(u.forges)) {
+
+    if (!f) continue;
+
+    // Luck boosts
+    if (f.type === "luck") {
+      luck *= f.boost;
+    }
+
+    // Extra rolls per roll
+    if (f.type === "roll") {
+      extraRolls += f.boost;
+    }
+
+    // Future-proof (optional)
+    if (f.type === "resource") {
+      // you can add resource system later
+    }
+  }
+}
 
       let anim = await msg.reply("🎲 Rolling...");
 
@@ -969,121 +943,88 @@ if (msg.content.startsWith("?use")) {
 }
  // ================= FORGE UI =================
 if (msg.content === "?forge") {
+  return msg.reply({
+    embeds: [
+      new EmbedBuilder()
+        .setColor(0xFFDE10)
+        .setTitle("⚒️ Crafting System")
+        .setDescription(
+`Use: ?forge <item>
 
-  const embed = new EmbedBuilder()
-    .setColor(0xFFDE10)
-    .setTitle("⚒️ Crafting System")
-    .setDescription(
-`Permanent Upgrades:
+Examples:
+?forge Reset I
+?forge Gold Part I
+?forge Rainbow Part I
 
-🔥 Reset I → Boost: 2.5x Luck
-Recipe: x10 Reset I
-Command: ?forge Reset I
-
-🔥 Gold Part I → Boost: 2.5x Luck
-Recipe: x10 Gold Part I
-Command: ?forge Gold Part I
-
-🔥 Rainbow Part I → Boost: 2x Rolls
-Recipe: x10 Rainbow Part I
-Command: ?forge Rainbow Part I
-
-🔥 Dark Part I → Boost: 1.5x Resource Luck
-Recipe: x10 Dark Part I
-Command: ?forge Dark Part I
-
-🔥 Tier I → Boost: 2x Rolls
-Recipe: x10 Tier I
-Command: ?forge Tier I
-
-🔥 Automation I → Boost: 1.5x Resource Luck
-Recipe: x10 Automation I
-Command: ?forge Automation I
-
-🔥 Deep Research I → Boost: 4x Luck
-Recipe: x10 Deep Research I
-Command: ?forge Deep Research I
-
-🔥 Eternal I → Boost: 3x Luck
-Recipe: x10 Eternal I
-Command: ?forge Eternal I
-
-🔥 Everything I → Boost: 2x Rolls
-Recipe: x10 Everything I
-Command: ?forge Everything I
-
-⚠️ These are PERMANENT upgrades
-`)
-    .setFooter({ text: "Use ?forge <item> to craft" });
-
-  return msg.reply({ embeds: [embed] });
+All upgrades are PERMANENT.`
+        )
+    ]
+  });
 }
     
 // ================= FORGE =================
-if (msg.content.startsWith("?forge")) {
+if (msg.content.startsWith("?forge ")) {
 
-  const args = msg.content.split(" ");
-  const item = args.slice(1).join(" ");
+  const item = msg.content.slice(7).trim();
+  const u = getUser(msg.author.id);
 
   const recipe = forgeRecipes[item];
 
   if (!recipe) {
-    return msg.reply(
-      "❌ Invalid forge item.\nTry: Reset I, Gold Part I, Rainbow Part I..."
-    );
+    return msg.reply("❌ Invalid forge item");
   }
 
-  const userInv = u.owned?.[item] || 0;
+  const inv = u.owned[item] || 0;
 
-  if (userInv < recipe.cost) {
+  if (inv < recipe.cost) {
     return msg.reply(
-      `❌ You need ${recipe.cost}x ${item} (you have ${userInv})`
+      `❌ Need ${recipe.cost}x ${item} (you have ${inv})`
     );
   }
 
   // consume items
   u.owned[item] -= recipe.cost;
 
-  // apply permanent boost
-  if (!u.forges[item]) {
-    u.forges[item] = {
-      type: recipe.type,
-      boost: recipe.boost
-    };
+  // prevent duplicate forge
+  if (u.forges[item]) {
+    return msg.reply("❌ Already forged this upgrade");
   }
+
+  // save forge
+  u.forges[item] = {
+    type: recipe.type,
+    boost: recipe.boost
+  };
 
   saveData();
 
-  const embed = new EmbedBuilder()
-    .setColor(0xFFDE10)
-    .setTitle("⚒️ Forge Successful!")
-    .setDescription(
-      `You forged **${item}**`
-    )
-    .addFields(
-      {
-        name: "⚡ Boost Type",
-        value: recipe.type,
-        inline: true
-      },
-      {
-        name: "📈 Effect",
-        value:
-          recipe.stat === "rolls"
-            ? `+${recipe.boost} Rolls per roll`
-            : `${recipe.boost}x ${recipe.stat}`,
-        inline: true
-      },
-      {
-        name: "📦 Cost",
-        value: `${recipe.cost}x ${item}`,
-        inline: true
-      }
-    )
-    .setFooter({ text: "Permanent Upgrade Applied" })
-    .setTimestamp();
-
-  return msg.reply({ embeds: [embed] });
+  return msg.reply({
+    embeds: [
+      new EmbedBuilder()
+        .setColor(0xFFDE10)
+        .setTitle("⚒️ Forge Successful")
+        .addFields(
+          {
+            name: "Upgrade",
+            value: item,
+            inline: false
+          },
+          {
+            name: "Type",
+            value: recipe.type,
+            inline: true
+          },
+          {
+            name: "Boost",
+            value:
+              recipe.type === "roll"
+                ? `+${recipe.boost} rolls`
+                : `${recipe.boost}x ${recipe.type}`,
+            inline: true
+          }
+        )
+    ]
+  });
 }
     
   // ================= REBIRTH =================
