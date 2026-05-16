@@ -1,4 +1,4 @@
-const {
+st {
   Client,
   GatewayIntentBits,
   EmbedBuilder,
@@ -27,20 +27,6 @@ let activeBoost = {};
 let autorollIntervals = {};
 let autorollLogs = {};
 let lastSeen = {};
-
-// ================= NUMBER FORMAT =================
-function formatNumber(n) {
-  if (n === null || n === undefined) return "0";
-
-  const abs = Math.abs(n);
-
-  if (abs >= 1e12) return (n / 1e12).toFixed(2).replace(/\.00$/, "") + "T";
-  if (abs >= 1e9)  return (n / 1e9).toFixed(2).replace(/\.00$/, "") + "B";
-  if (abs >= 1e6)  return (n / 1e6).toFixed(2).replace(/\.00$/, "") + "M";
-  if (abs >= 1e3)  return (n / 1e3).toFixed(2).replace(/\.00$/, "") + "K";
-
-  return n.toString();
-}
 
 // ================= ROLE REWARDS =================
 const roleRewards = {
@@ -469,19 +455,13 @@ if (
       name: "📈Progress📈",
       value:
         `⭐Level: ${u.level}\n` +
-        {
-  name: "📈Progress📈",
-  value:
-    `⭐Level: ${u.level}\n` +
-    `XP: ${formatNumber(u.xp)}/${formatNumber(xpNeeded(u.level))} [+${formatNumber(gain)}]`,
-  inline: false
-},
+        `XP: ${u.xp}/${xpNeeded(u.level)} [+${gain}]`,
       inline: false
     },
     {
       name: "⚡Roll Stats⚡",
       value:
-        `🔁Rolls: ${formatNumber(u.rolls)}\n` +
+        `🔁Rolls: ${u.rolls}\n` +
         `🍀Luck: x${luck.toFixed(2)}`,
       inline: false
     }
@@ -568,14 +548,14 @@ if (autorollLogs[id] && autorollLogs[id].length > 0) {
     }
 
     // ================= STATS =================
-if (msg.content === "?stats") {
-  return msg.reply(`
+    if (msg.content === "?stats") {
+      return msg.reply(`
 ⭐ Level: ${u.level}
-XP: ${formatNumber(u.xp)}/${formatNumber(xpNeeded(u.level))}
-🎲 Rolls: ${formatNumber(u.rolls)}
+XP: ${u.xp}/${xpNeeded(u.level)}
+🎲 Rolls: ${u.rolls}
 🔄 Rebirths: ${u.rebirths}
-  `);
-}
+      `);
+    }
 
     // ================= PROFILE =================
     if (msg.content.startsWith("?profile")) {
@@ -823,7 +803,7 @@ if (msg.content === "?rebirth") {
     .addFields({
       name: "📊 Your Progress",
       value:
-🎲 Rolls: ${formatNumber(u.rolls)}/${formatNumber(req)}
+`🎲 Rolls: ${u.rolls.toLocaleString()}/${req.toLocaleString()}
 🔄 Current Rebirths: ${u.rebirths}`
     })
     .setFooter({
