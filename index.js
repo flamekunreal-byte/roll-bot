@@ -459,27 +459,33 @@ if (
       const embed = new EmbedBuilder()
   .setColor(e.color)
   .setTitle("🎲 Roll Result 🎲")
-.addFields(
-  {
-    name: "✨Result✨",
-    value: `${r.name} [${r.display}]`,
-    inline: false
-  },
-  {
-    name: "📈Progress📈",
-    value:
-`⭐Level: ${u.level}
-XP: ${formatNumber(u.xp)}/${formatNumber(xpNeeded(u.level))} [+${formatNumber(gain)}]`,
-    inline: false
-  },
-  {
-    name: "⚡Roll Stats⚡",
-    value:
-      `🔁Rolls: ${formatNumber(u.rolls)}\n` +
-      `🍀Luck: x${luck.toFixed(2)}`,
-    inline: false
-  }
-)
+  .addFields(
+    {
+      name: "✨Result✨",
+      value: `${r.name} [${r.display}]`,
+      inline: false
+    },
+    {
+      name: "📈Progress📈",
+      value:
+        `⭐Level: ${u.level}\n` +
+        {
+  name: "📈Progress📈",
+  value:
+    `⭐Level: ${u.level}\n` +
+    `XP: ${formatNumber(u.xp)}/${formatNumber(xpNeeded(u.level))} [+${formatNumber(gain)}]`,
+  inline: false
+},
+      inline: false
+    },
+    {
+      name: "⚡Roll Stats⚡",
+      value:
+        `🔁Rolls: ${formatNumber(u.rolls)}\n` +
+        `🍀Luck: x${luck.toFixed(2)}`,
+      inline: false
+    }
+  )
   .setFooter({
     text:
       `RNG System Luck Engine Active • ` +
@@ -505,7 +511,13 @@ XP: ${formatNumber(u.xp)}/${formatNumber(xpNeeded(u.level))} [+${formatNumber(ga
         content: "",
         embeds: [embed]
       });
-// ================= AUTOROLL SUMMARY =================
+
+      const role = roleRewards[r.name];
+
+      if (role) {
+        msg.member.roles.add(role).catch(() => {});
+     
+        // ================= AUTOROLL SUMMARY ON MANUAL ROLL =================
 if (autorollLogs[id] && autorollLogs[id].length > 0) {
 
   const logs = autorollLogs[id];
@@ -528,28 +540,33 @@ if (autorollLogs[id] && autorollLogs[id].length > 0) {
   const channel = client.channels.cache.get(CHANNEL_ID);
 
   if (channel) {
-    const summary = new EmbedBuilder()
+    const embed = new EmbedBuilder()
       .setColor(0xFFDE10)
       .setTitle("⏳ Auto Roll Summary")
       .addFields(
         { name: "🎲 Times Rolled", value: `${totalRolls}`, inline: true },
-        { name: "💎 Rarest Roll", value: highest ? `${highest.name} (${highest.display})` : "None", inline: true },
+        {
+  name: "💎 Rarest Roll",
+  value:
+    highest
+      ? `${highest.name} (${highest.display})\nCount: ${u.owned[highest.name] || 0}`
+      : "None",
+  inline: true
+},
         { name: "📈 Points Gained", value: `${pointsGained.toLocaleString()}`, inline: true },
         { name: "⭐ Levels Gained", value: `${totalLevels}`, inline: true }
       )
       .setFooter({ text: "Autoroll System" })
       .setTimestamp();
 
-    channel.send({ embeds: [summary] }).catch(() => {});
+    channel.send({ embeds: [embed] }).catch(() => {});
   }
 }
-      
-      const role = roleRewards[r.name];
+      }
 
-     if (role) {
-  msg.member.roles.add(role).catch(() => {});
-}
-      
+      return;
+    }
+
     // ================= STATS =================
 if (msg.content === "?stats") {
   return msg.reply(`
@@ -803,13 +820,12 @@ if (msg.content === "?rebirth") {
 • Max reduction: 5s total
 • Minimum autoroll speed: 5s`
     )
-.addFields({
-  name: "📊 Your Progress",
-value: `
+    .addFields({
+      name: "📊 Your Progress",
+      value:
 🎲 Rolls: ${formatNumber(u.rolls)}/${formatNumber(req)}
-🔄 Current Rebirths: ${u.rebirths}
-`,
-})
+🔄 Current Rebirths: ${u.rebirths}`
+    })
     .setFooter({
       text: "Type ?rebirth confirm to rebirth"
     });
@@ -938,56 +954,54 @@ if (isAdmin) {
   }
 }
 
-// ================= RAREST LEADERBOARD =================
-if (msg.content.trim() === "?leaderboard") {
+    // ================= RAREST LEADERBOARD =================
+    if (msg.content === "?leaderboard") {
 
-  const entries = Object.entries(userData);
+      const entries = Object.entries(userData);
 
-  const getName = (id) =>
-    msg.guild.members.cache.get(id)?.displayName || "Unknown";
+      const getName = (id) =>
+        msg.guild.members.cache.get(id)?.displayName || "Unknown";
 
-  const getRarestValue = (u) => {
-    if (!u.rarest) return 0;
-    return points[u.rarest] || 0;
-  };
+      const getRarestValue = (u) => {
+        if (!u.rarest) return 0;
+        return points[u.rarest] || 0;
+      };
 
-  const getRarestCount = (u) => {
-    if (!u.rarest) return 0;
-    return u.owned?.[u.rarest] || 0;
-  };
+      const getRarestCount = (u) => {
+        if (!u.rarest) return 0;
+        return u.owned?.[u.rarest] || 0;
+      };
 
-  const leaderboard = entries
-    .sort((a, b) => {
-      const rareDiff =
-        getRarestValue(b[1]) - getRarestValue(a[1]);
+      const leaderboard = [...entries]
+        .sort((a, b) => {
+          const rareDiff =
+            getRarestValue(b[1]) - getRarestValue(a[1]);
 
-      if (rareDiff !== 0) return rareDiff;
+          if (rareDiff !== 0) return rareDiff;
 
-      return getRarestCount(b[1]) - getRarestCount(a[1]);
-    })
-    .slice(0, 10)
-    .map((x, i) => {
-      const u = x[1];
+          return getRarestCount(b[1]) - getRarestCount(a[1]);
+        })
+        .slice(0, 10)
+        .map((x, i) => {
+          const u = x[1];
 
-      return (
-        `${i + 1}. 💎 ${getName(x[0])}\n` +
-        `Rarest: ${u.rarest || "None"}\n` +
-        `Count: ${getRarestCount(u)}`
-      );
-    })
-    .join("\n\n");
+          return (
+            `${i + 1}. 💎 ${getName(x[0])}\n` +
+            `Rarest: ${u.rarest || "None"}\n` +
+            `Count: ${getRarestCount(u)}`
+          );
+        })
+        .join("\n\n");
 
-  return msg.reply({
-    embeds: [
-      new EmbedBuilder()
-        .setColor(COLOR)
-        .setTitle("💎 Rarest Roll Leaderboard")
-        .setDescription(leaderboard || "No data")
-    ]
-  });
-}
-client.on("messageCreate", async (msg) => {
-  try {
+      return msg.reply({
+        embeds: [
+          new EmbedBuilder()
+            .setColor(COLOR)
+            .setTitle("💎 Rarest Roll Leaderboard")
+            .setDescription(leaderboard || "No data")
+        ]
+      });
+    }
 
   } catch (err) {
     console.error(err);
