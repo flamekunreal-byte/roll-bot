@@ -546,9 +546,10 @@ if (autorollLogs[id] && autorollLogs[id].length > 0) {
       
       const role = roleRewards[r.name];
 
-      if (role) {
-        msg.member.roles.add(role).catch(() => {});
-     
+     if (role) {
+  msg.member.roles.add(role).catch(() => {});
+}
+      
     // ================= STATS =================
 if (msg.content === "?stats") {
   return msg.reply(`
