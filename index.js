@@ -11,6 +11,19 @@ const CHANNEL_ID = "1504547166088069181";
 const DATA_FILE = "./data.json";
 const COLOR = 0xFFDE10;
 
+function formatNumber(num) {
+  if (num === null || num === undefined) return "0";
+
+  const abs = Math.abs(num);
+
+  if (abs >= 1e12) return (num / 1e12).toFixed(2).replace(/\.00$/, "") + "T";
+  if (abs >= 1e9) return (num / 1e9).toFixed(2).replace(/\.00$/, "") + "B";
+  if (abs >= 1e6) return (num / 1e6).toFixed(2).replace(/\.00$/, "") + "M";
+  if (abs >= 1e3) return (num / 1e3).toFixed(2).replace(/\.00$/, "") + "K";
+
+  return num.toString();
+}
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -520,24 +533,36 @@ if (autorollLogs[id] && autorollLogs[id].length > 0) {
   const channel = client.channels.cache.get(CHANNEL_ID);
 
   if (channel) {
-    const embed = new EmbedBuilder()
-      .setColor(0xFFDE10)
-      .setTitle("⏳ Auto Roll Summary")
-      .addFields(
-        { name: "🎲 Times Rolled", value: `${totalRolls}`, inline: true },
-        {
-  name: "💎 Rarest Roll",
-  value:
-    highest
-      ? `${highest.name} (${highest.display})\nCount: ${u.owned[highest.name] || 0}`
-      : "None",
-  inline: true
-},
-        { name: "📈 Points Gained", value: `${pointsGained.toLocaleString()}`, inline: true },
-        { name: "⭐ Levels Gained", value: `${totalLevels}`, inline: true }
-      )
-      .setFooter({ text: "Autoroll System" })
-      .setTimestamp();
+const embed = new EmbedBuilder()
+  .setColor(0xFFDE10)
+  .setTitle("⏳ Auto Roll Summary")
+  .addFields(
+    {
+      name: "🎲 Times Rolled",
+      value: `${formatNumber(totalRolls)}`,
+      inline: true
+    },
+    {
+      name: "💎 Rarest Roll",
+      value:
+        highest
+          ? `${highest.name} (${highest.display})\nCount: ${formatNumber(u.owned[highest.name] || 0)}`
+          : "None",
+      inline: true
+    },
+    {
+      name: "📈 Points Gained",
+      value: `${formatNumber(pointsGained)}`,
+      inline: true
+    },
+    {
+      name: "⭐ Levels Gained",
+      value: `${formatNumber(totalLevels)}`,
+      inline: true
+    }
+  )
+  .setFooter({ text: "Autoroll System" })
+  .setTimestamp();
 
     channel.send({ embeds: [embed] }).catch(() => {});
   }
@@ -548,14 +573,14 @@ if (autorollLogs[id] && autorollLogs[id].length > 0) {
     }
 
     // ================= STATS =================
-    if (msg.content === "?stats") {
-      return msg.reply(`
+if (msg.content === "?stats") {
+  return msg.reply(`
 ⭐ Level: ${u.level}
-XP: ${u.xp}/${xpNeeded(u.level)}
-🎲 Rolls: ${u.rolls}
+XP: ${formatNumber(u.xp)}/${formatNumber(xpNeeded(u.level))}
+🎲 Rolls: ${formatNumber(u.rolls)}
 🔄 Rebirths: ${u.rebirths}
-      `);
-    }
+  `);
+}
 
     // ================= PROFILE =================
     if (msg.content.startsWith("?profile")) {
@@ -570,25 +595,26 @@ XP: ${u.xp}/${xpNeeded(u.level)}
             .setColor(COLOR)
             .setTitle(`📊 ${target.username}`)
             .addFields(
-              {
-                name: "⭐ Level",
-                value: `${p.level}`,
-                inline: true
-              },
-              {
-                name: "🎲 Rolls",
-                value: `${p.rolls}`,
-                inline: true
-              },
-              {
-                name: "🔄 Rebirths",
-                value: `${p.rebirths}`,
-                inline: true
-              },
-              {
-                name: "💎 Rarest",
-                value: p.rarest || "None"
-              }
+            {
+  name: "⭐ Level",
+  value: `${p.level}`,
+  inline: true
+},
+{
+  name: "🎲 Rolls",
+  value: `${formatNumber(p.rolls)}`,
+  inline: true
+},
+{
+  name: "🔄 Rebirths",
+  value: `${p.rebirths}`,
+  inline: true
+},
+{
+  name: "💎 Rarest",
+  value: p.rarest || "None",
+  inline: false
+}
             )
         ]
       });
@@ -603,26 +629,22 @@ if (msg.content === "?inv") {
     .setTitle(`🎒 ${msg.author.username}'s Inventory`)
     .setDescription("Your collected dice items:")
     .addFields(
-      {
-        name: "🎲 Lucky Dice",
-        value: `${i["Lucky Dice"]}`,
-        inline: true
-      },
-      {
-        name: "🥇 Golden Lucky Dice",
-        value: `${i["Golden Lucky Dice"]}`,
-        inline: true
-      },
-      {
-        name: "💎 Diamond Lucky Dice",
-        value: `${i["Diamond Lucky Dice"]}`,
-        inline: true
-      },
-      {
-        name: "🌌 Cosmic Lucky Dice",
-        value: `${i["Cosmic Lucky Dice"]}`,
-        inline: true
-      }
+     {
+  name: "🎲 Lucky Dice",
+  value: `${formatNumber(i["Lucky Dice"])}`
+},
+{
+  name: "🥇 Golden Lucky Dice",
+  value: `${formatNumber(i["Golden Lucky Dice"])}`
+},
+{
+  name: "💎 Diamond Lucky Dice",
+  value: `${formatNumber(i["Diamond Lucky Dice"])}`
+},
+{
+  name: "🌌 Cosmic Lucky Dice",
+  value: `${formatNumber(i["Cosmic Lucky Dice"])}`
+}
     )
     .addFields({
       name: "⚡ How to Use",
@@ -787,7 +809,7 @@ if (msg.content === "?rebirth") {
     .setColor(COLOR)
     .setTitle("🔄 Rebirth System")
     .setDescription(
-`Rebirth at **${req.toLocaleString()}** rolls
+`Rebirth at **${formatNumber(req)}** rolls
 
 🔓 Rebirth 1:
 • Unlock Autoroll (10s)
@@ -803,7 +825,7 @@ if (msg.content === "?rebirth") {
     .addFields({
       name: "📊 Your Progress",
       value:
-`🎲 Rolls: ${u.rolls.toLocaleString()}/${req.toLocaleString()}
+`🎲 Rolls: ${formatNumber(u.rolls)}/${formatNumber(req)}
 🔄 Current Rebirths: ${u.rebirths}`
     })
     .setFooter({
@@ -934,54 +956,72 @@ if (isAdmin) {
   }
 }
 
-    // ================= RAREST LEADERBOARD =================
-    if (msg.content === "?leaderboard") {
+// ================= RAREST LEADERBOARD =================
+if (msg.content === "?leaderboard") {
 
-      const entries = Object.entries(userData);
+  const entries = Object.entries(userData);
 
-      const getName = (id) =>
-        msg.guild.members.cache.get(id)?.displayName || "Unknown";
+  const getName = (id) =>
+    msg.guild.members.cache.get(id)?.displayName || "Unknown";
 
-      const getRarestValue = (u) => {
-        if (!u.rarest) return 0;
-        return points[u.rarest] || 0;
-      };
+  const getRarestValue = (u) => {
+    if (!u.rarest) return 0;
+    return points[u.rarest] || 0;
+  };
 
-      const getRarestCount = (u) => {
-        if (!u.rarest) return 0;
-        return u.owned?.[u.rarest] || 0;
-      };
+  const getRarestCount = (u) => {
+    if (!u.rarest) return 0;
+    return u.owned?.[u.rarest] || 0;
+  };
 
-      const leaderboard = [...entries]
-        .sort((a, b) => {
-          const rareDiff =
-            getRarestValue(b[1]) - getRarestValue(a[1]);
+  // ===== FORMAT NUMBER (K/M/B) =====
+  const formatNumber = (num) => {
+    if (num === null || num === undefined) return "0";
 
-          if (rareDiff !== 0) return rareDiff;
+    const abs = Math.abs(num);
 
-          return getRarestCount(b[1]) - getRarestCount(a[1]);
-        })
-        .slice(0, 10)
-        .map((x, i) => {
-          const u = x[1];
+    if (abs >= 1e12) return (num / 1e12).toFixed(2).replace(/\.00$/, "") + "T";
+    if (abs >= 1e9) return (num / 1e9).toFixed(2).replace(/\.00$/, "") + "B";
+    if (abs >= 1e6) return (num / 1e6).toFixed(2).replace(/\.00$/, "") + "M";
+    if (abs >= 1e3) return (num / 1e3).toFixed(2).replace(/\.00$/, "") + "K";
 
-          return (
-            `${i + 1}. 💎 ${getName(x[0])}\n` +
-            `Rarest: ${u.rarest || "None"}\n` +
-            `Count: ${getRarestCount(u)}`
-          );
-        })
-        .join("\n\n");
+    return num.toString();
+  };
 
-      return msg.reply({
-        embeds: [
-          new EmbedBuilder()
-            .setColor(COLOR)
-            .setTitle("💎 Rarest Roll Leaderboard")
-            .setDescription(leaderboard || "No data")
-        ]
-      });
-    }
+  const leaderboard = [...entries]
+    .sort((a, b) => {
+      const rareDiff =
+        getRarestValue(b[1]) - getRarestValue(a[1]);
+
+      if (rareDiff !== 0) return rareDiff;
+
+      return getRarestCount(b[1]) - getRarestCount(a[1]);
+    })
+    .slice(0, 10)
+    .map((x, i) => {
+      const u = x[1];
+
+      const rareName = u.rarest || "None";
+      const rareValue = points[rareName] || 0;
+      const rareCount = u.owned?.[rareName] || 0;
+
+      return (
+        `${i + 1}. 💎 ${getName(x[0])}\n` +
+        `Rarest: ${rareName} (${formatNumber(rareValue)})\n` +
+        `Count: ${formatNumber(rareCount)}`
+      );
+    })
+    .join("\n\n");
+
+  return msg.reply({
+    embeds: [
+      new EmbedBuilder()
+        .setColor(COLOR)
+        .setTitle("💎 Rarest Roll Leaderboard")
+        .setDescription(leaderboard || "No data")
+    ]
+  });
+}
 
   } catch (err) {
     console.error(err);
