@@ -891,16 +891,80 @@ if (msg.content.startsWith("?use")) {
     embeds: [embed]
   });
 }
- // ================= FORGE UI =================
-if (msg.content.toLowerCase() === "?forgerecipes") {
+// ================= FORGE RECIPES =================
+if (msg.content === "?forgerecipes") {
 
-  const list = Object.entries(forgeRecipes)
-    .map(([name, r]) => {
-      return `**${name}**
-Type: ${r.type}
-Cost: ${r.cost}
-Effect: ${r.desc}`;
-    })
+  const forgeInfo = {
+    "Reset I": {
+      emoji: "🧤",
+      name: "Luck Glove",
+      boost: "2.5x Luck",
+      cost: "x10 Reset I"
+    },
+
+    "Gold Part I": {
+      emoji: "🍀",
+      name: "Golden Clover",
+      boost: "2.5x Luck",
+      cost: "x10 Gold Part I"
+    },
+
+    "Rainbow Part I": {
+      emoji: "🌈",
+      name: "Rainbow Engine",
+      boost: "+2 Rolls",
+      cost: "x10 Rainbow Part I"
+    },
+
+    "Dark Part I": {
+      emoji: "🌑",
+      name: "Shadow Core",
+      boost: "1.5x Resource Luck",
+      cost: "x10 Dark Part I"
+    },
+
+    "Tier I": {
+      emoji: "💠",
+      name: "Tier Accelerator",
+      boost: "+2 Rolls",
+      cost: "x10 Tier I"
+    },
+
+    "Automation I": {
+      emoji: "🤖",
+      name: "Auto Reactor",
+      boost: "1.5x Resource Luck",
+      cost: "x10 Automation I"
+    },
+
+    "Deep Research I": {
+      emoji: "🧠",
+      name: "Research Brain",
+      boost: "4x Luck",
+      cost: "x10 Deep Research I"
+    },
+
+    "Eternal I": {
+      emoji: "♾️",
+      name: "Eternal Orb",
+      boost: "3x Luck",
+      cost: "x10 Eternal I"
+    },
+
+    "Everything I": {
+      emoji: "🌌",
+      name: "Galaxy Roller",
+      boost: "+2 Rolls",
+      cost: "x10 Everything I"
+    }
+  };
+
+  const list = Object.values(forgeInfo)
+    .map(f =>
+`${f.emoji} **${f.name}**
+✨ Boost: ${f.boost}
+⚒️ Cost: ${f.cost}`
+    )
     .join("\n\n");
 
   return msg.reply({
@@ -908,9 +972,16 @@ Effect: ${r.desc}`;
       new EmbedBuilder()
         .setColor(0xFFDE10)
         .setTitle("⚒️ Forge Recipes")
-        .setDescription(list)
+        .setDescription(
+          `${list}\n\n🔨 Forge permanent upgrades using rare items!`
+        )
+        .setFooter({
+          text: "Usage: ?forge <item name>  • Example: ?forge Reset I"
+        })
+        .setTimestamp()
     ]
   });
+}
 }
     
 // ================= FORGE =================
