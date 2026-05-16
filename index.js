@@ -192,15 +192,60 @@ const forgeBoosts = {
 
 // ===== CRAFTING SYSTEM =====
 const forgeRecipes = {
-  "Reset I":        { type: "luck", boost: 2.5, cost: 10 },
-  "Gold Part I":    { type: "luck", boost: 2.5, cost: 10 },
-  "Rainbow Part I": { type: "roll", boost: 2, cost: 10 },
-  "Dark Part I":    { type: "resource", boost: 1.5, cost: 10 },
-  "Tier I":         { type: "roll", boost: 2, cost: 10 },
-  "Automation I":   { type: "resource", boost: 1.5, cost: 10 },
-  "Deep Research I":{ type: "luck", boost: 4, cost: 10 },
-  "Eternal I":      { type: "luck", boost: 3, cost: 10 },
-  "Everything I":   { type: "roll", boost: 2, cost: 10 }
+  "Reset I": {
+    type: "luck",
+    boost: 2.5,
+    cost: 10,
+    desc: "2.5x Luck"
+  },
+  "Gold Part I": {
+    type: "luck",
+    boost: 2.5,
+    cost: 10,
+    desc: "2.5x Luck"
+  },
+  "Rainbow Part I": {
+    type: "roll",
+    boost: 2,
+    cost: 10,
+    desc: "+2 Rolls per roll"
+  },
+  "Dark Part I": {
+    type: "resource",
+    boost: 1.5,
+    cost: 10,
+    desc: "1.5x Resource gain"
+  },
+  "Tier I": {
+    type: "roll",
+    boost: 2,
+    cost: 10,
+    desc: "+2 Rolls per roll"
+  },
+  "Automation I": {
+    type: "resource",
+    boost: 1.5,
+    cost: 10,
+    desc: "1.5x Resource gain"
+  },
+  "Deep Research I": {
+    type: "luck",
+    boost: 4,
+    cost: 10,
+    desc: "4x Luck"
+  },
+  "Eternal I": {
+    type: "luck",
+    boost: 3,
+    cost: 10,
+    desc: "3x Luck"
+  },
+  "Everything I": {
+    type: "roll",
+    boost: 2,
+    cost: 10,
+    desc: "+2 Rolls per roll"
+  }
 };
 
 // ================= DICE =================
@@ -466,6 +511,7 @@ if (u.forges) {
     }
   }
 }
+     // ========ROLL==========
 
       let anim = await msg.reply("🎲 Rolling...");
 
@@ -846,22 +892,23 @@ if (msg.content.startsWith("?use")) {
   });
 }
  // ================= FORGE UI =================
-if (msg.content.toLowerCase().startsWith("?forgerecipes")) {
+if (msg.content.toLowerCase() === "?forgerecipes") {
+
+  const list = Object.entries(forgeRecipes)
+    .map(([name, r]) => {
+      return `**${name}**
+Type: ${r.type}
+Cost: ${r.cost}
+Effect: ${r.desc}`;
+    })
+    .join("\n\n");
+
   return msg.reply({
     embeds: [
       new EmbedBuilder()
         .setColor(0xFFDE10)
-        .setTitle("⚒️ Crafting System")
-        .setDescription(
-`Use: ?forge <item>
-
-Examples:
-?forge Reset I
-?forge Gold Part I
-?forge Rainbow Part I
-
-All upgrades are PERMANENT.`
-        )
+        .setTitle("⚒️ Forge Recipes")
+        .setDescription(list)
     ]
   });
 }
