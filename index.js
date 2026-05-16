@@ -939,7 +939,7 @@ if (isAdmin) {
 }
 
     // ================= RAREST LEADERBOARD =================
-    if (msg.content === "?leaderboard") {
+    if (msg.content.trim() === "?leaderboard")
 
       const entries = Object.entries(userData);
 
