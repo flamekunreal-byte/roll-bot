@@ -97,27 +97,26 @@ function saveData() {
 loadData();
 
 // ================= USER =================
-function getUser(id) {
-  if (!userData[id]) {
-    userData[id] = {
-      xp: 0,
-      level: 1,
-      rolls: 0,
-      rebirths: 0,
-      owned: {},
-      rarest: null,
+userData[id] = {
+  xp: 0,
+  level: 1,
+  rolls: 0,
+  rebirths: 0,
+  owned: {},
+  rarest: null,
 
-      inventory: {
-        "Lucky Dice": 0,
-        "Golden Lucky Dice": 0,
-        "Diamond Lucky Dice": 0,
-        "Cosmic Lucky Dice": 0
-      },
+  inventory: {
+    "Lucky Dice": 0,
+    "Golden Lucky Dice": 0,
+    "Diamond Lucky Dice": 0,
+    "Cosmic Lucky Dice": 0
+  },
 
-      forges: {},
+  forges: {},
 
-      selectedLuck: 1
-    };
+  selectedLuck: 1,
+  autoLuck: false
+};
   }
 
   return userData[id];
@@ -152,6 +151,14 @@ function getTotalLuck(u) {
   luck *= (u.rebirths + 1);
 
   return luck;
+}
+function getAutoLuck(u) {
+  const base = getLuck(u.level, u.rebirths);
+
+  // smooth scaling per progress
+  const rollFactor = Math.log10(u.rolls + 10);
+
+  return base * rollFactor;
 }
 
 //======SET LUCK======
@@ -543,6 +550,19 @@ client.on("messageCreate", async (msg) => {
       `);
     }
 
+      //======AUTO LUCK======
+if (msg.content === "?autoluck") {
+  const u = getUser(msg.author.id);
+
+  u.autoLuck = !u.autoLuck;
+
+  saveData();
+
+  return msg.reply(
+    `⚡ Auto Luck Mode: **${u.autoLuck ? "ON" : "OFF"}**`
+  );
+}
+    
     // ================= ROLL =================
     if (msg.content === "?roll") {
       if (u.rebirths >= 1) {
@@ -556,9 +576,19 @@ if (activeBoost[id]?.length > 0) {
 }
 
 // ===== FORGE LOOP (PERMANENT UPGRADES) =====
-let baseLuck = getLuck(u.level, u.rebirths) * boost;
+let baseLuck =
+  getLuck(u.level, u.rebirths) * boost;
 
-let luck = Math.min(baseLuck, u.selectedLuck);
+let luck;
+
+// AUTO MODE ON
+if (u.autoLuck) {
+  luck = getAutoLuck(u) * boost;
+} 
+// MANUAL MODE
+else {
+  luck = Math.min(baseLuck, u.selectedLuck || Infinity);
+}
 
 let luck =
   Math.min(baseLuck, u.selectedLuck || u.maxLuck);
