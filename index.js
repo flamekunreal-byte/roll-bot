@@ -232,10 +232,9 @@ const forgeRecipes = {
   u.owned[recipe] -= 10;
 
   // apply forge (ONE TIME ONLY)
-  if (!u.forges[item]) u.forges[item] = 0;
-   {
-    return msg.reply("❌ Already forged");
-  }
+if (u.forges[item]) {
+  return msg.reply("❌ Already forged");
+}
 
 u.forges[item] = {
   type: recipe.type,
@@ -954,10 +953,15 @@ if (msg.content.startsWith("?forge ")) {
   // consume items
   u.owned[item] -= recipe.cost;
 
-  // prevent duplicate forge
- if (u.forges[item]) {
+// apply forge (ONE TIME ONLY)
+if (u.forges[item]) {
   return msg.reply("❌ Already forged");
 }
+
+u.forges[item] = {
+  type: recipe.type,
+  boost: recipe.boost
+};
 
   // save forge
   u.forges[item] = {
