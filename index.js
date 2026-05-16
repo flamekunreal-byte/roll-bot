@@ -270,7 +270,7 @@ const forgeRecipes = {
   }
 };
 
-if (msg.content.startsWith("?forge")) {
+if (msg.content.startsWith("?forges")) {
 
   const item = msg.content.slice(6).trim();
 
@@ -306,7 +306,10 @@ if (msg.content.startsWith("?forge")) {
     return msg.reply("❌ Already forged");
   }
 
-  u.forges[item] = 1;
+u.forges[item] = {
+  type: recipe.type,
+  boost: recipe.boost
+};
 
   saveData();
 
@@ -583,7 +586,8 @@ if (
 }
       
 
-      let luck = getLuck(u.level, u.rebirths) * boost; let extraRolls = 0;  // apply forge boosts if (u.forges) {   for (const f of Object.values(u.forges)) {      if (f.stat === "luck") {       luck *= f.boost;     }      if (f.stat === "rolls") {       extraRolls += f.boost;     }   } }
+      let luck = getLuck(u.level, u.rebirths) * boost; let extraRolls = 0;  // apply forge boosts if (u.forges) {   for (const f of Object.values(u.forges)) {      if (f.type === "luck") luck *= f.boost;
+if (f.type === "roll") extraRolls += f.boost; {       luck *= f.boost;     }      if (f.stat === "rolls") {       extraRolls += f.boost;     }   } }
 
       let anim = await msg.reply("🎲 Rolling...");
 
@@ -612,7 +616,7 @@ if (
         leveled = true;
       }
 
-      const dice = giveDice(u, resourceBoost);
+      const dice = giveDice(u);
 
       saveData();
 
@@ -963,55 +967,56 @@ if (msg.content.startsWith("?use")) {
     embeds: [embed]
   });
 }
-    if (msg.content === "?forges") {
+ // ================= FORGE UI =================
+if (msg.content === "?forge") {
 
-  return msg.reply({
-    embeds: [
-      new EmbedBuilder()
-        .setColor(0xFFDE10)
-        .setTitle("⚒️ Crafting System")
-        .setDescription("Permanent upgrades unlocked via forging")
-        .addFields(
-          {
-            name: "Reset I",
-            value: "Boost: 2.5x Luck\nRecipe: x10 Reset I\nCommand: ?forge Reset I"
-          },
-          {
-            name: "Gold Part I",
-            value: "Boost: 2.5x Luck\nRecipe: x10 Gold Part I\nCommand: ?forge Gold Part I"
-          },
-          {
-            name: "Rainbow Part I",
-            value: "Boost: 2x Rolls\nRecipe: x10 Rainbow Part I\nCommand: ?forge Rainbow Part I"
-          },
-          {
-            name: "Dark Part I",
-            value: "Boost: 1.5x Resource Luck\nRecipe: x10 Dark Part I\nCommand: ?forge Dark Part I"
-          },
-          {
-            name: "Tier I",
-            value: "Boost: 2x Rolls\nRecipe: x10 Tier I\nCommand: ?forge Tier I"
-          },
-          {
-            name: "Automation I",
-            value: "Boost: 1.5x Resource Luck\nRecipe: x10 Automation I\nCommand: ?forge Automation I"
-          },
-          {
-            name: "Deep Research I",
-            value: "Boost: 4x Luck\nRecipe: x10 Deep Research I\nCommand: ?forge Deep Research I"
-          },
-          {
-            name: "Eternal I",
-            value: "Boost: 3x Luck\nRecipe: x10 Eternal I\nCommand: ?forge Eternal I"
-          },
-          {
-            name: "Everything I",
-            value: "Boost: 2x Rolls\nRecipe: x10 Everything I\nCommand: ?forge Everything I"
-          }
-        )
-        .setFooter({ text: "All upgrades are permanent" })
-    ]
-  });
+  const embed = new EmbedBuilder()
+    .setColor(0xFFDE10)
+    .setTitle("⚒️ Crafting System")
+    .setDescription(
+`Permanent Upgrades:
+
+🔥 Reset I → Boost: 2.5x Luck
+Recipe: x10 Reset I
+Command: ?forge Reset I
+
+🔥 Gold Part I → Boost: 2.5x Luck
+Recipe: x10 Gold Part I
+Command: ?forge Gold Part I
+
+🔥 Rainbow Part I → Boost: 2x Rolls
+Recipe: x10 Rainbow Part I
+Command: ?forge Rainbow Part I
+
+🔥 Dark Part I → Boost: 1.5x Resource Luck
+Recipe: x10 Dark Part I
+Command: ?forge Dark Part I
+
+🔥 Tier I → Boost: 2x Rolls
+Recipe: x10 Tier I
+Command: ?forge Tier I
+
+🔥 Automation I → Boost: 1.5x Resource Luck
+Recipe: x10 Automation I
+Command: ?forge Automation I
+
+🔥 Deep Research I → Boost: 4x Luck
+Recipe: x10 Deep Research I
+Command: ?forge Deep Research I
+
+🔥 Eternal I → Boost: 3x Luck
+Recipe: x10 Eternal I
+Command: ?forge Eternal I
+
+🔥 Everything I → Boost: 2x Rolls
+Recipe: x10 Everything I
+Command: ?forge Everything I
+
+⚠️ These are PERMANENT upgrades
+`)
+    .setFooter({ text: "Use ?forge <item> to craft" });
+
+  return msg.reply({ embeds: [embed] });
 }
     
 // ================= FORGE =================
