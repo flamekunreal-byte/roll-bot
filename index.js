@@ -159,22 +159,22 @@ function getAutoLuck(u) {
   return base;
 }
 
-//======SET LUCK======
-function handleLuckCommand(msg) {
+// ====== SET LUCK ======
+if (msg.content.startsWith("?setluck")) {
   const u = getUser(msg.author.id);
 
-  const amt = parseLuck(msg.content.split(" ")[1]);
-  if (!amt || amt <= 0) {
-    return msg.reply("❌ Invalid luck amount.");
+  const args = msg.content.split(" ");
+  const value = Number(args[1]);
+
+  if (!value || value <= 0) {
+    return msg.reply("❌ Usage: ?setluck <number>");
   }
 
-  const maxLuck = getTotalLuck(u);
+  u.selectedLuck = value;
 
-  u.selectedLuck = Math.min(amt, maxLuck);
+  saveData();
 
-  msg.reply(
-    `🍀 Luck set to x${formatNumber(u.selectedLuck)} (Max: x${formatNumber(maxLuck)})`
-  );
+  return msg.reply(`🎯 Luck cap set to **${value}**`);
 }
 
 // ================= XP =================
@@ -601,18 +601,27 @@ if (msg.content === "?roll") {
     startAutoroll(id);
   }
 
-  let boost = 1;
+ let boost = 1;
 
-  if (activeBoost[id]?.length > 0) {
-    boost = activeBoost[id].shift();
-  }
+if (activeBoost[id]?.length > 0) {
+  boost = activeBoost[id].shift();
+}
 
-  const baseLuck = getLuck(u.level, u.rebirths) * boost;
-  const autoLuck = getAutoLuck(u) * boost;
+const baseLuck = getLuck(u.level, u.rebirths) * boost;
+const autoLuck = getAutoLuck(u) * boost;
 
-  let luck = u.autoLuck
-    ? autoLuck
-    : baseLuck;
+let luck;
+
+if (u.autoLuck) {
+  luck = autoLuck;
+} else {
+  luck = Math.min(baseLuck, u.selectedLuck ?? Infinity);
+}
+
+// optional safety clamp
+if (u.selectedLuck && !u.autoLuck) {
+  luck = Math.min(luck, u.selectedLuck);
+}
 
   // ================= SETLUCK CAP (PUT IT HERE) =================
   if (!u.autoLuck && u.selectedLuck != null) {
