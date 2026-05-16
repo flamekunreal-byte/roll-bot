@@ -293,9 +293,20 @@ saveData();
 // ================= BOT =================
 client.on("messageCreate", async (msg) => {
   try {
+
+    // ignore bots + DMs
     if (!msg.guild || msg.author.bot) return;
 
+    // ================= CHANNEL LOCK =================
+    const allowedChannel = "1504547166088069181";
+
+    // only allow bot commands in this channel
+    if (msg.channel.id !== allowedChannel) {
+      return;
+    }
+
     const id = msg.author.id;
+
     const u = getUser(id);
 
     const isAdmin = msg.member.permissions.has(
