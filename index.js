@@ -462,7 +462,14 @@ if (autorollLogs[id] && autorollLogs[id].length > 0) {
       .setTitle("⏳ Auto Roll Summary")
       .addFields(
         { name: "🎲 Times Rolled", value: `${totalRolls}`, inline: true },
-        { name: "💎 Rarest Roll", value: highest ? `${highest.name} (${highest.display})` : "None", inline: true },
+        {
+  name: "💎 Rarest Roll",
+  value:
+    highest
+      ? `${highest.name} (${highest.display})\nCount: ${u.owned[highest.name] || 0}`
+      : "None",
+  inline: true
+},
         { name: "📈 Points Gained", value: `${pointsGained.toLocaleString()}`, inline: true },
         { name: "⭐ Levels Gained", value: `${totalLevels}`, inline: true }
       )
