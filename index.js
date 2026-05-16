@@ -524,7 +524,7 @@ if (activeBoost[id]?.length > 0) {
 }
 
 // ===== FORGE LOOP (PERMANENT UPGRADES) =====
-let luck = getLuck(u.level, u.rebirths) * boost;
+let luck = getLuck(u.level, u.rebirths) * boost;  if (u.luckCap) {   luck = Math.min(luck, u.luckCap); }
 let extraRolls = 0;
 
 if (u.forges) {
