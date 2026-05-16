@@ -606,13 +606,13 @@ if (msg.content.startsWith("?setluck")) {
         `XP: ${u.xp}/${xpNeeded(u.level)} [+${gain}]`,
       inline: false
     },
-    {
-      name: "⚡Roll Stats⚡",
-      value:
-        `🔁Rolls: ${u.rolls}\n` +
-    `🍀Luck: x${formatNumber(luck)}\n🎛️Selected: x${formatNumber(u.selectedLuck || u.maxLuck)}`
-      inline: false
-    }
+   {
+  name: "⚡Roll Stats⚡",
+  value:
+    `🔁Rolls: ${u.rolls}\n` +
+    `🍀Luck: x${formatNumber(luck)}\n🎛️Selected: x${formatNumber(u.selectedLuck || u.maxLuck)}`,
+  inline: false
+}
   )
   .setFooter({
     text:
