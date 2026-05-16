@@ -560,10 +560,21 @@ if (msg.content === "?inv") {
 // ================= USE =================
 if (msg.content.startsWith("?use")) {
 
-  const input = msg.content
+  const args = msg.content
     .slice(4)
     .trim()
-    .toLowerCase();
+    .toLowerCase()
+    .split(" ");
+
+  let amount = 1;
+
+  // detect number at start
+  if (!isNaN(args[0])) {
+    amount = parseInt(args[0]);
+    args.shift();
+  }
+
+  const input = args.join(" ");
 
   const items = {
     lucky: {
@@ -627,34 +638,52 @@ if (msg.content.startsWith("?use")) {
     );
   }
 
-  // inventory check
-  if (
-    !u.inventory[found.name] ||
-    u.inventory[found.name] <= 0
-  ) {
+  // invalid amount
+  if (amount <= 0 || isNaN(amount)) {
     return msg.reply(
-      `❌ You don't have any ${found.name}`
+      "❌ Invalid amount"
     );
   }
 
-  // consume item
-  u.inventory[found.name]--;
+  // inventory check
+  if (
+    !u.inventory[found.name] ||
+    u.inventory[found.name] < amount
+  ) {
+    return msg.reply(
+      `❌ You only have ${u.inventory[found.name] || 0} ${found.name}`
+    );
+  }
 
-  // apply boost
-  activeBoost[id] = found.boost;
+  // consume dice
+  u.inventory[found.name] -= amount;
+
+  // queue boosts
+  if (!activeBoost[id]) {
+    activeBoost[id] = [];
+  }
+
+  for (let i = 0; i < amount; i++) {
+    activeBoost[id].push(found.boost);
+  }
 
   saveData();
 
   const embed = new EmbedBuilder()
     .setColor(0xFFDE10)
-    .setTitle("⚡ Luck Boost Activated")
+    .setTitle("⚡ Dice Activated")
     .setDescription(
-      `Used **${found.name}**`
+      `Queued **${amount}x ${found.name}**`
     )
     .addFields(
       {
-        name: "🍀 Luck Multiplier",
+        name: "🍀 Luck Per Roll",
         value: `x${found.boost}`,
+        inline: true
+      },
+      {
+        name: "🎲 Rolls Boosted",
+        value: `${amount}`,
         inline: true
       },
       {
@@ -664,7 +693,7 @@ if (msg.content.startsWith("?use")) {
       }
     )
     .setFooter({
-      text: "Boost applies to your next ?roll"
+      text: "Boost applies automatically on future rolls"
     })
     .setTimestamp();
 
@@ -672,7 +701,6 @@ if (msg.content.startsWith("?use")) {
     embeds: [embed]
   });
 }
-
   // ================= REBIRTH =================
 if (msg.content === "?rebirth") {
 
