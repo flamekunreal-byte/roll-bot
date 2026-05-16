@@ -24,24 +24,6 @@ function formatNumber(num) {
   return num.toString();
 }
 
-function parseLuck(input) {
-  input = input.toLowerCase();
-
-  if (input.endsWith("k")) {
-    return parseFloat(input) * 1_000;
-  }
-
-  if (input.endsWith("m")) {
-    return parseFloat(input) * 1_000_000;
-  }
-
-  if (input.endsWith("b")) {
-    return parseFloat(input) * 1_000_000_000;
-  }
-
-  return parseFloat(input);
-}
-
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -133,7 +115,9 @@ function getUser(id) {
       },
 
       forges: {}
-      luckCap: null,
+
+      maxLuck: 1000000,
+selectedLuck: 1,
     };
   }
 
@@ -524,7 +508,11 @@ if (activeBoost[id]?.length > 0) {
 }
 
 // ===== FORGE LOOP (PERMANENT UPGRADES) =====
-let luck = getLuck(u.level, u.rebirths) * boost;  if (u.luckCap) {   luck = Math.min(luck, u.luckCap); }
+let baseLuck =
+  getLuck(u.level, u.rebirths) * boost;
+
+let luck =
+  Math.min(baseLuck, u.selectedLuck || u.maxLuck);
 let extraRolls = 0;
 
 if (u.forges) {
@@ -541,6 +529,33 @@ if (u.forges) {
     }
   }
 }
+      
+// ================= SET LUCK =================
+if (msg.content.startsWith("?setluck")) {
+
+  const input = msg.content.split(" ")[1];
+
+  const amount = parseLuck(input);
+
+  if (!amount || isNaN(amount) || amount <= 0) {
+    return msg.reply("❌ Invalid luck amount");
+  }
+
+  if (amount > u.maxLuck) {
+    return msg.reply(
+      `❌ Max luck is x${formatNumber(u.maxLuck)}`
+    );
+  }
+
+  u.selectedLuck = amount;
+
+  saveData();
+
+  return msg.reply(
+    `✅ Selected luck set to x${formatNumber(amount)}`
+  );
+}
+      
      // ========ROLL==========
 
       let anim = await msg.reply("🎲 Rolling...");
@@ -596,7 +611,7 @@ if (u.forges) {
       name: "⚡Roll Stats⚡",
       value:
         `🔁Rolls: ${u.rolls}\n` +
-        `🍀Luck: x${luck.toFixed(2)}`,
+    `🍀Luck: x${formatNumber(luck)}\n🎛️Selected: x${formatNumber(u.selectedLuck || u.maxLuck)}`
       inline: false
     }
   )
@@ -740,42 +755,6 @@ XP: ${formatNumber(u.xp)}/${formatNumber(xpNeeded(u.level))}
         ]
       });
     }
-
-  // ================= SET LUCK =================
-if (msg.content.startsWith("?setluck")) {
-
-  const arg = msg.content.split(" ")[1];
-
-  if (!arg) {
-    return msg.reply(
-      "Usage: ?setluck <amount|max>\nExample: ?setluck 1m"
-    );
-  }
-
-  if (arg.toLowerCase() === "max") {
-
-    u.luckCap = null;
-
-    saveData();
-
-    return msg.reply("✅ Luck cap removed");
-  }
-
-  const amount = parseLuck(arg);
-
-  if (isNaN(amount) || amount <= 0) {
-    return msg.reply("❌ Invalid luck amount");
-  }
-
-  u.luckCap = amount;
-
-  saveData();
-
-  return msg.reply(
-    `✅ Luck cap set to x${formatNumber(amount)}`
-  );
-}
-    
 // ================= INVENTORY =================
 if (msg.content === "?inv") {
 
