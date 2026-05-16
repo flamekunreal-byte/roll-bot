@@ -546,7 +546,7 @@ client.on("messageCreate", async (msg) => {
 
 //======AUTO LUCK======
 if (msg.content.startsWith("?autoluck")) {
-  const u = getUser(msg.author.id);
+  u
 
   const args = msg.content.trim().split(/\s+/).slice(1);
   const mode = args[0]?.toLowerCase();
