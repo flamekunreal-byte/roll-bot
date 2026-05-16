@@ -116,13 +116,62 @@ function getUser(id) {
 
       forges: {},
 
-      maxLuck: 1000000,
       selectedLuck: 1
     };
   }
 
   return userData[id];
 }
+
+// ================= HELPERS =================
+
+function parseLuck(input) {
+  input = String(input).toLowerCase();
+
+  if (input.endsWith("k")) {
+    return parseFloat(input) * 1_000;
+  }
+
+  if (input.endsWith("m")) {
+    return parseFloat(input) * 1_000_000;
+  }
+
+  if (input.endsWith("b")) {
+    return parseFloat(input) * 1_000_000_000;
+  }
+  return parseFloat(input);
+}
+function getTotalLuck(u) {
+  let luck = 1;
+
+  if (u.inventory["Lucky Dice"] > 0) luck *= 5;
+  if (u.inventory["Golden Lucky Dice"] > 0) luck *= 25;
+  if (u.inventory["Diamond Lucky Dice"] > 0) luck *= 100;
+  if (u.inventory["Cosmic Lucky Dice"] > 0) luck *= 250;
+
+  luck *= (u.rebirths + 1);
+
+  return luck;
+}
+
+//======SET LUCK======
+function handleLuckCommand(msg) {
+  const u = getUser(msg.author.id);
+
+  const amt = parseLuck(msg.content.split(" ")[1]);
+  if (!amt || amt <= 0) {
+    return msg.reply("❌ Invalid luck amount.");
+  }
+
+  const maxLuck = getTotalLuck(u);
+
+  u.selectedLuck = Math.min(amt, maxLuck);
+
+  msg.reply(
+    `🍀 Luck set to x${formatNumber(u.selectedLuck)} (Max: x${formatNumber(maxLuck)})`
+  );
+}
+
 // ================= XP =================
 function xpNeeded(lv) {
   return Math.floor(5 * Math.pow(1.5, lv - 1));
@@ -507,8 +556,9 @@ if (activeBoost[id]?.length > 0) {
 }
 
 // ===== FORGE LOOP (PERMANENT UPGRADES) =====
-let baseLuck =
-  getLuck(u.level, u.rebirths) * boost;
+let baseLuck = getLuck(u.level, u.rebirths) * boost;
+
+let luck = Math.min(baseLuck, u.selectedLuck);
 
 let luck =
   Math.min(baseLuck, u.selectedLuck || u.maxLuck);
@@ -606,11 +656,12 @@ if (msg.content.startsWith("?setluck")) {
         `XP: ${u.xp}/${xpNeeded(u.level)} [+${gain}]`,
       inline: false
     },
-   {
-  name: "⚡Roll Stats⚡",
+{
+  name: "⚡ Roll Stats ⚡",
   value:
-    `🔁Rolls: ${u.rolls}\n` +
-    `🍀Luck: x${formatNumber(luck)}\n🎛️Selected: x${formatNumber(u.selectedLuck || u.maxLuck)}`,
+    `🔁 Rolls: ${u.rolls}\n` +
+    `🍀 Luck: x${formatNumber(u.selectedLuck)}\n` +
+    `📈 Max Possible: x${formatNumber(getTotalLuck(u))}`,
   inline: false
 }
   )
