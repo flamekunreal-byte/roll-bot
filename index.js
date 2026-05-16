@@ -265,7 +265,6 @@ u.forges[item] = {
         .setFooter({ text: "Permanent Upgrade System" })
     ]
   });
-}
 
 // ================= DICE =================
 function giveDice(user) {
