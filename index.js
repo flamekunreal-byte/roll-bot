@@ -459,29 +459,27 @@ if (
       const embed = new EmbedBuilder()
   .setColor(e.color)
   .setTitle("🎲 Roll Result 🎲")
-  .addFields(
-    {
-      name: "✨Result✨",
-      value: `${r.name} [${r.display}]`,
-      inline: false
-    },
-{
-  name: "📈Progress📈",
-  value:
+.addFields(
+  {
+    name: "✨Result✨",
+    value: `${r.name} [${r.display}]`,
+    inline: false
+  },
+  {
+    name: "📈Progress📈",
+    value:
 `⭐Level: ${u.level}
 XP: ${formatNumber(u.xp)}/${formatNumber(xpNeeded(u.level))} [+${formatNumber(gain)}]`,
-  inline: false
-}
-      inline: false
-    },
-    {
-      name: "⚡Roll Stats⚡",
-      value:
-        `🔁Rolls: ${formatNumber(u.rolls)}\n` +
-        `🍀Luck: x${luck.toFixed(2)}`,
-      inline: false
-    }
-  )
+    inline: false
+  },
+  {
+    name: "⚡Roll Stats⚡",
+    value:
+      `🔁Rolls: ${formatNumber(u.rolls)}\n` +
+      `🍀Luck: x${luck.toFixed(2)}`,
+    inline: false
+  }
+)
   .setFooter({
     text:
       `RNG System Luck Engine Active • ` +
