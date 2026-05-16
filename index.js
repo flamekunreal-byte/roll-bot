@@ -511,11 +511,30 @@ saveData();
 }
 
 // ================= BOT =================
-client.on("messageCreate", async (msg) => {
-  try {
+client.on("messageCreate", (msg) => {
+  if (msg.author.bot) return;
 
-    // ignore bots + DMs
-    if (!msg.guild || msg.author.bot) return;
+  const u = getUser(msg.author.id);
+
+  // ===== ROLL =====
+  if (msg.content === "?roll") {
+    // roll code
+  }
+  
+  // ===== SET LUCK =====
+  if (msg.content.startsWith("?setluck")) {
+    const value = Number(msg.content.split(" ")[1]);
+
+    if (!value || value <= 0) {
+      return msg.reply("❌ Usage: ?setluck <number>");
+    }
+
+    u.selectedLuck = value;
+    saveData();
+
+    return msg.reply(`🎯 Luck cap set to **${value}**`);
+  }
+});
 
     // ================= CHANNEL LOCK =================
     const allowedChannel = "1504547166088069181";
