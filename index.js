@@ -493,7 +493,7 @@ saveData();
 }
 
 // ================= BOT =================
-client.on("messageCreate", (msg) => {
+client.on("messageCreate", async (msg) => {
   if (msg.author.bot) return;
 
   const u = getUser(msg.author.id);
