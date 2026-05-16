@@ -24,6 +24,24 @@ function formatNumber(num) {
   return num.toString();
 }
 
+function parseLuck(input) {
+  input = input.toLowerCase();
+
+  if (input.endsWith("k")) {
+    return parseFloat(input) * 1_000;
+  }
+
+  if (input.endsWith("m")) {
+    return parseFloat(input) * 1_000_000;
+  }
+
+  if (input.endsWith("b")) {
+    return parseFloat(input) * 1_000_000_000;
+  }
+
+  return parseFloat(input);
+}
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -115,6 +133,7 @@ function getUser(id) {
       },
 
       forges: {}
+      luckCap: null,
     };
   }
 
@@ -721,6 +740,42 @@ XP: ${formatNumber(u.xp)}/${formatNumber(xpNeeded(u.level))}
         ]
       });
     }
+
+  // ================= SET LUCK =================
+if (msg.content.startsWith("?setluck")) {
+
+  const arg = msg.content.split(" ")[1];
+
+  if (!arg) {
+    return msg.reply(
+      "Usage: ?setluck <amount|max>\nExample: ?setluck 1m"
+    );
+  }
+
+  if (arg.toLowerCase() === "max") {
+
+    u.luckCap = null;
+
+    saveData();
+
+    return msg.reply("✅ Luck cap removed");
+  }
+
+  const amount = parseLuck(arg);
+
+  if (isNaN(amount) || amount <= 0) {
+    return msg.reply("❌ Invalid luck amount");
+  }
+
+  u.luckCap = amount;
+
+  saveData();
+
+  return msg.reply(
+    `✅ Luck cap set to x${formatNumber(amount)}`
+  );
+}
+    
 // ================= INVENTORY =================
 if (msg.content === "?inv") {
 
