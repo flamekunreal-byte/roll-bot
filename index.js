@@ -1113,7 +1113,6 @@ if (msg.content === "?forgerecipes") {
 if (msg.content.startsWith("?forge ")) {
 
   const item = msg.content.slice(7).trim();
-  const u = getUser(msg.author.id);
 
   const recipe = forgeRecipes[item];
 
