@@ -687,11 +687,10 @@ if (msg.content.startsWith("?setluck")) {
       inline: false
     },
 {
-  name: "⚡ Roll Stats ⚡",
+  name: "⚡Roll Stats⚡",
   value:
-    `🔁 Rolls: ${u.rolls}\n` +
-    `🍀 Luck: x${formatNumber(u.selectedLuck)}\n` +
-    `📈 Max Possible: x${formatNumber(getTotalLuck(u))}`,
+    `🔁Rolls: ${u.rolls}\n` +
+    `🍀Luck: x${formatNumber(luck)}\n🎛️Mode: ${u.autoLuck ? "AUTO" : `MANUAL (x${formatNumber(u.selectedLuck)})`}`,
   inline: false
 }
   )
