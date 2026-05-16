@@ -96,27 +96,28 @@ function saveData() {
 
 loadData();
 
-// ================= USER =================
-userData[id] = {
-  xp: 0,
-  level: 1,
-  rolls: 0,
-  rebirths: 0,
-  owned: {},
-  rarest: null,
+function getUser(id) {
+  if (!userData[id]) {
+    userData[id] = {
+      xp: 0,
+      level: 1,
+      rolls: 0,
+      rebirths: 0,
+      owned: {},
+      rarest: null,
 
-  inventory: {
-    "Lucky Dice": 0,
-    "Golden Lucky Dice": 0,
-    "Diamond Lucky Dice": 0,
-    "Cosmic Lucky Dice": 0
-  },
+      inventory: {
+        "Lucky Dice": 0,
+        "Golden Lucky Dice": 0,
+        "Diamond Lucky Dice": 0,
+        "Cosmic Lucky Dice": 0
+      },
 
-  forges: {},
+      forges: {},
 
-  selectedLuck: 1,
-  autoLuck: false
-};
+      selectedLuck: 1,
+      autoLuck: false
+    };
   }
 
   return userData[id];
