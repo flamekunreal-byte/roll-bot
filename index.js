@@ -203,8 +203,6 @@ const forgeRecipes = {
   "Everything I":   { type: "roll", boost: 2, cost: 10 }
 };
 
-if (msg.content.startsWith("?forgeRecipes")) {
-
   const item = msg.content.slice(6).trim();
 
   const u = getUser(msg.author.id);
@@ -913,9 +911,8 @@ if (msg.content.startsWith("?use")) {
   });
 }
  // ================= FORGE UI =================
-  if (msg.content === "?forgeRecipes") {
-  return msg.reply(...);
-}
+if (msg.content === "?forgeRecipes") {
+  return msg.reply({
     embeds: [
       new EmbedBuilder()
         .setColor(0xFFDE10)
@@ -958,9 +955,9 @@ if (msg.content.startsWith("?forge ")) {
   u.owned[item] -= recipe.cost;
 
   // prevent duplicate forge
-  if (u.forges[item]) {
-    return msg.reply("❌ Already forged this upgrade");
-  }
+ if (u.forges[item]) {
+  return msg.reply("❌ Already forged");
+}
 
   // save forge
   u.forges[item] = {
