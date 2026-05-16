@@ -556,44 +556,110 @@ if (msg.content.startsWith("?use")) {
 
   const items = {
     lucky: {
+      aliases: [
+        "lucky",
+        "lucky dice",
+        "luckydice"
+      ],
       name: "Lucky Dice",
       boost: 5
     },
+
     golden: {
+      aliases: [
+        "golden",
+        "golden dice",
+        "golden lucky dice",
+        "goldendice"
+      ],
       name: "Golden Lucky Dice",
       boost: 25
     },
+
     diamond: {
+      aliases: [
+        "diamond",
+        "diamond dice",
+        "diamond lucky dice",
+        "diamonddice"
+      ],
       name: "Diamond Lucky Dice",
       boost: 100
     },
+
     cosmic: {
+      aliases: [
+        "cosmic",
+        "cosmic dice",
+        "cosmic lucky dice",
+        "cosmicdice"
+      ],
       name: "Cosmic Lucky Dice",
       boost: 1000
     }
   };
 
-  const key = Object.keys(items).find(k => k === input);
+  let found = null;
 
-  if (!key) {
-    return msg.reply("❌ Invalid item. Use: lucky, golden, diamond, cosmic");
+  for (const key in items) {
+
+    if (items[key].aliases.includes(input)) {
+      found = items[key];
+      break;
+    }
   }
 
-  const item = items[key];
+  if (!found) {
 
-  if (!u.inventory[item.name] || u.inventory[item.name] <= 0) {
-    return msg.reply("❌ You don't have this item");
+    return msg.reply(
+      "❌ Invalid item.\nUse: lucky, golden, diamond, cosmic"
+    );
   }
 
-  u.inventory[item.name]--;
+  // inventory check
+  if (
+    !u.inventory[found.name] ||
+    u.inventory[found.name] <= 0
+  ) {
+    return msg.reply(
+      `❌ You don't have any ${found.name}`
+    );
+  }
 
-  activeBoost[id] = item.boost;
+  // consume item
+  u.inventory[found.name]--;
+
+  // apply boost
+  activeBoost[id] = found.boost;
 
   saveData();
 
-  return msg.reply(
-    `⚡ Used **${item.name}** (+${item.boost}x luck)`
-  );
+  const embed = new EmbedBuilder()
+    .setColor(0xFFDE10)
+    .setTitle("⚡ Luck Boost Activated")
+    .setDescription(
+      `Used **${found.name}**`
+    )
+    .addFields(
+      {
+        name: "🍀 Luck Multiplier",
+        value: `x${found.boost}`,
+        inline: true
+      },
+      {
+        name: "🎒 Remaining",
+        value: `${u.inventory[found.name]}`,
+        inline: true
+      }
+    )
+    .setFooter({
+      text: "Boost applies to your next ?roll"
+    })
+    .setTimestamp();
+
+  return msg.reply({
+    embeds: [embed]
+  });
 }
 
   // ================= REBIRTH =================
