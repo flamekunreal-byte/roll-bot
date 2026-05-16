@@ -497,21 +497,20 @@ client.on("messageCreate", async (msg) => {
   if (msg.author.bot) return;
 
   const u = getUser(msg.author.id);
-  
-// ===== SET LUCK =====
-if (msg.content.startsWith("?setluck")) {
-  const value = Number(msg.content.split(" ")[1]);
 
-  if (!value || value <= 0) {
-    return msg.reply("❌ Usage: ?setluck <number>");
+  //=============SET LUCK==================
+  if (msg.content.startsWith("?setluck")) {
+    const value = Number(msg.content.split(" ")[1]);
+
+    if (!value || value <= 0) {
+      return msg.reply("❌ Usage: ?setluck <number>");
+    }
+
+    u.selectedLuck = value;
+    saveData();
+
+    return msg.reply(`🎯 Luck cap set to **${value}**`);
   }
-
-  u.selectedLuck = value;
-
-  saveData();
-
-  return msg.reply(`🎯 Luck cap set to **${value}**`);
-}
 
     // ================= CHANNEL LOCK =================
     const allowedChannel = "1504547166088069181";
