@@ -576,22 +576,14 @@ if (activeBoost[id]?.length > 0) {
   boost = activeBoost[id].shift();
 }
 
-// ===== FORGE LOOP (PERMANENT UPGRADES) =====
-let baseLuck =
-  getLuck(u.level, u.rebirths) * boost;
+const baseLuck = getLuck(u.level, u.rebirths) * boost;
 
-let luck;
+const autoLuck = getAutoLuck(u) * boost;
 
-// AUTO MODE ON
-if (u.autoLuck) {
-  luck = getAutoLuck(u) * boost;
-} 
-// MANUAL MODE
-else {
-  luck = Math.min(baseLuck, u.selectedLuck || Infinity);
-}
+const luck = u.autoLuck
+  ? autoLuck
+  : Math.min(baseLuck, u.selectedLuck ?? Infinity);
 
-let luck =
   Math.min(baseLuck, u.selectedLuck || u.maxLuck);
 let extraRolls = 0;
 
