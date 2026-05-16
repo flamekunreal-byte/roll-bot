@@ -112,9 +112,6 @@ function getUser(id) {
         "Golden Lucky Dice": 0,
         "Diamond Lucky Dice": 0,
         "Cosmic Lucky Dice": 0
-      },
-
-      forges: {} // permanent upgrades ONLY
     };
   }
 
@@ -122,7 +119,6 @@ function getUser(id) {
 }
 
 // ===== FORGE SYSTEM =====
-forges: {
   "Reset I": 0,
   "Gold Part I": 0,
   "Rainbow Part I": 0,
@@ -222,7 +218,7 @@ const forgeRecipes = {
   "Everything I":   { type: "roll", boost: 2, cost: 10 }
 };
 
-if (msg.content.startsWith("?forges")) {
+if (msg.content.startsWith("?forge")) {
 
   const item = msg.content.slice(6).trim();
 
@@ -254,7 +250,7 @@ if (msg.content.startsWith("?forges")) {
 
   // apply forge (ONE TIME ONLY)
   if (!u.forges[item]) u.forges[item] = 0;
-  if (u.forges[item] >= 1) {
+   {
     return msg.reply("❌ Already forged");
   }
 
@@ -528,12 +524,11 @@ client.on("messageCreate", async (msg) => {
         startAutoroll(id);
       }
 
-      let boost = 1;
+let boost = 1;
 
-if (
-  activeBoost[id] &&
-  activeBoost[id].length > 0
-) {
+if (Array.isArray(activeBoost[id]) && activeBoost[id].length > 0) {
+  boost = activeBoost[id].shift();
+}
   boost = activeBoost[id].shift();
 }
       
@@ -541,24 +536,20 @@ let luck = getLuck(u.level, u.rebirths) * boost;
 let extraRolls = 0;
 
 // ===== FORGE LOOP (PERMANENT UPGRADES) =====
+let luck = getLuck(u.level, u.rebirths) * boost;
+let extraRolls = 0;
+
 if (u.forges) {
   for (const f of Object.values(u.forges)) {
 
     if (!f) continue;
 
-    // Luck boosts
     if (f.type === "luck") {
       luck *= f.boost;
     }
 
-    // Extra rolls per roll
     if (f.type === "roll") {
       extraRolls += f.boost;
-    }
-
-    // Future-proof (optional)
-    if (f.type === "resource") {
-      // you can add resource system later
     }
   }
 }
@@ -942,7 +933,6 @@ if (msg.content.startsWith("?use")) {
   });
 }
  // ================= FORGE UI =================
-if (msg.content === "?forge") {
   return msg.reply({
     embeds: [
       new EmbedBuilder()
