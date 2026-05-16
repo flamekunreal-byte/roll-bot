@@ -498,20 +498,20 @@ client.on("messageCreate", async (msg) => {
 
   const u = getUser(msg.author.id);
   
-  // ===== SET LUCK =====
-  if (msg.content.startsWith("?setluck")) {
-    const value = Number(msg.content.split(" ")[1]);
+// ===== SET LUCK =====
+if (msg.content.startsWith("?setluck")) {
+  const value = Number(msg.content.split(" ")[1]);
 
-    if (!value || value <= 0) {
-      return msg.reply("❌ Usage: ?setluck <number>");
-    }
-
-    u.selectedLuck = value;
-    saveData();
-
-    return msg.reply(`🎯 Luck cap set to **${value}**`);
+  if (!value || value <= 0) {
+    return msg.reply("❌ Usage: ?setluck <number>");
   }
-});
+
+  u.selectedLuck = value;
+
+  saveData();
+
+  return msg.reply(`🎯 Luck cap set to **${value}**`);
+}
 
     // ================= CHANNEL LOCK =================
     const allowedChannel = "1504547166088069181";
@@ -640,32 +640,7 @@ if (u.selectedLuck && !u.autoLuck) {
       }
     }
   }
-      
-//======SET LUCK======
-if (msg.content.startsWith("?setluck")) {
-  const u = getUser(msg.author.id);
-
-  const args = msg.content.trim().split(/\s+/).slice(1);
-  const value = parseFloat(args[0]);
-
-  // No input
-  if (!args[0]) {
-    return msg.reply("Usage: ?setluck <number>");
-  }
-
-  // Invalid number
-  if (isNaN(value)) {
-    return msg.reply("❌ Please enter a valid number.");
-  }
-
-  // Set luck value
-  u.selectedLuck = value;
-
-  saveData();
-
-  return msg.reply(`🎯 Selected Luck set to **${value}**`);
-}
-      
+       
      // ========ROLL==========
 
       let anim = await msg.reply("🎲 Rolling...");
