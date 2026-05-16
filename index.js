@@ -806,9 +806,10 @@ if (msg.content === "?rebirth") {
     )
 .addFields({
   name: "📊 Your Progress",
-  value:
-`🎲 Rolls: ${formatNumber(u.rolls)}/${formatNumber(req)}
-🔄 Current Rebirths: ${u.rebirths}`
+value: `
+🎲 Rolls: ${formatNumber(u.rolls)}/${formatNumber(req)}
+🔄 Current Rebirths: ${u.rebirths}
+`,
 })
     .setFooter({
       text: "Type ?rebirth confirm to rebirth"
