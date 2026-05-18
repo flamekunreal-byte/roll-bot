@@ -427,8 +427,8 @@ function startAutoroll(id) {
 
     const boost = activeBoost[id] || 1;
 
-    const luck =
-      getLuck(u.level, u.rebirths) * boost;
+const luck =
+  (getLuck(u.level, u.rebirths) * 0.10) * boost;
 
     const r = roll(luck);
 
@@ -472,9 +472,6 @@ function startAutoroll(id) {
 
       levelUps++;
     }
-
-    // dice drops
-    giveDice(u, luck);
 
     // autoroll logs
     if (!autorollLogs[id]) {
@@ -843,38 +840,75 @@ if (msg.content === "?inv") {
 
   const i = u.inventory;
 
+  const forgeMats = [
+    "Reset I",
+    "Gold Part I",
+    "Rainbow Part I",
+    "Dark Part I",
+    "Tier I",
+    "Automation I",
+    "Deep Research I",
+    "Eternal I",
+    "Everything I"
+  ];
+
+ const forgeProgress = Object.entries(forgeRecipes)
+  .map(([name, recipe]) => {
+
+    const owned =
+      u.owned?.[recipe.item] || 0;
+
+    return (
+      `${recipe.emoji} ${name}\n` +
+      `${recipe.item}: ${formatNumber(owned)}/${recipe.cost}`
+    );
+  })
+  .join("\n\n");
+
   const embed = new EmbedBuilder()
     .setColor(COLOR)
     .setTitle(`🎒 ${msg.author.username}'s Inventory`)
-    .setDescription("Your collected dice items:")
+    .setDescription("Your collected items and forge materials:")
     .addFields(
-     {
-  name: "🎲 Lucky Dice",
-  value: `${formatNumber(i["Lucky Dice"])}`
-},
-{
-  name: "🥇 Golden Lucky Dice",
-  value: `${formatNumber(i["Golden Lucky Dice"])}`
-},
-{
-  name: "💎 Diamond Lucky Dice",
-  value: `${formatNumber(i["Diamond Lucky Dice"])}`
-},
-{
-  name: "🌌 Cosmic Lucky Dice",
-  value: `${formatNumber(i["Cosmic Lucky Dice"])}`
+      {
+        name: "🎲 Lucky Dice",
+        value: `${formatNumber(i["Lucky Dice"])}`,
+        inline: true
+      },
+      {
+        name: "🥇 Golden Lucky Dice",
+        value: `${formatNumber(i["Golden Lucky Dice"])}`,
+        inline: true
+      },
+      {
+        name: "💎 Diamond Lucky Dice",
+        value: `${formatNumber(i["Diamond Lucky Dice"])}`,
+        inline: true
+      },
+      {
+        name: "🌌 Cosmic Lucky Dice",
+        value: `${formatNumber(i["Cosmic Lucky Dice"])}`,
+        inline: true
+      },
+   {
+  name: "⚒️ Forge Progress",
+  value: forgeProgress || "None",
+  inline: false
 }
+      {
+        name: "⚡ How to Use",
+        value:
+          "`?use lucky | golden | diamond | cosmic`\n" +
+          "`?forge <item>`",
+        inline: false
+      }
     )
-    .addFields({
-      name: "⚡ How to Use",
-      value: "`?use lucky | golden | diamond | cosmic`"
-    })
     .setFooter({ text: "Inventory System" })
     .setTimestamp();
 
   return msg.reply({ embeds: [embed] });
 }
-
+    
 // ================= USE =================
 if (msg.content.startsWith("?use")) {
 
@@ -1222,13 +1256,18 @@ if (msg.content === "?rebirth confirm") {
     );
   }
 
-  u.rebirths++;
+u.rebirths++;
 
-  u.level = 1;
-  u.xp = 0;
-  u.rolls = 0;
+u.level = 1;
+u.xp = 0;
+u.rolls = 0;
 
-  saveData();
+activeBoost[id] = [];
+autorollLogs[id] = [];
+
+u.autoLuck = false;
+
+saveData();
 
   return msg.reply(
     `✅ Rebirth successful! You are now Rebirth ${u.rebirths}`
